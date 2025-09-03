@@ -44,7 +44,7 @@ class View(QGraphicsView):
             y = scene_pos.y() - ITEM_H / 2
 
 
-            item = ExpressionItem(x, y, ITEM_W, ITEM_H)
+            item = ExpressionItem(x, y)
             scene.addItem(item)
 
             # Highlight/select the new item
