@@ -40,15 +40,19 @@ def integ(eq: str, d_: str) -> str:
     d_ = sc.simplify(d_)
     return str(sc.integrate(exp, d_))
 
-#def diff(eq: str, d_: str, n: int = 1) -> str:
-#    eq = insert_multiplication(eq)
-#    symbols: list = [char for char in eq if char.isalpha()]
-#    for i in symbols:
-#        exec(f"{i} = sc.Symbol('{i}')")
-#    exp = sc.simplify(eq)
-#    d_ = d_.replace('d', '')
-#    d_ = sc.simplify(d_)
-#    return str(sc.diff(exp, d_, n))
+def diff(eq: str, d_: str) -> str:
+    eq = insert_multiplication(eq)
+    d_ = d_.removeprefix('d')
+    if bool(re.findall(r'^\d+', d_)):
+        n: int = int(re.findall(r'^\d+', d_)[0])
+    else: n: int = 1
+    d_ = re.findall(r'\D*$', d_)[0]
+    d_ = sc.simplify(d_)
+    symbols: list = [char for char in eq if char.isalpha()]
+    for i in symbols:
+        exec(f"{i} = sc.Symbol('{i}')")
+    exp = sc.simplify(eq)
+    return str(sc.diff(exp, d_, n))
 
 #def csvToTable(path:str) -> str:
 #    path = path.removeprefix('csv:')
@@ -62,7 +66,6 @@ def integ(eq: str, d_: str) -> str:
 def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: list[str] = []) -> (str | float):
     
     eq = insert_multiplication(eq)
-    #tmp_list = list(eq)
     tmp_list: list[str] = re.split(r'(\+|\-|\*|\/)', eq)
     result = [str(optionalVarDict.get(ch, ch)) for ch in tmp_list]
     eq = ''.join(result)
@@ -79,7 +82,9 @@ def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additio
 #        return diff(diffEq, d_, n)
     if operation == 'integration':
         return integ(eq, additional[0])
-    if contains_symbols(eq):
+    elif operation == 'differentiation':
+        return diff(eq, additional[0])
+    elif contains_symbols(eq):
         return evalAlgEq(eq)
     else:
         return evalEq(eq)

@@ -156,9 +156,16 @@ class IntegrationItem(ExpressionItem):
 
         self.differential = AutoResizeLineEdit()
         self.differential.setText("dx")
+        self.differential.setStyleSheet("""
+            AutoResizeLineEdit {
+                background: rgba(255, 255, 255, 0);  /* semi-transparent white */
+                color: black;  /* fully visible text */
+                border: 0px solid gray;
+            }
+        """)
         self.DifferentialQlineEditProxy = QGraphicsProxyWidget(self)
         self.DifferentialQlineEditProxy.setWidget(self.differential)
-        self.DifferentialQlineEditProxy.setPos(15, 5)
+        self.DifferentialQlineEditProxy.setPos(15, 7)
 
         self.integralSign = QGraphicsTextItem("∫", self)
         self.integralSign.setPos(0, 3)
@@ -173,7 +180,7 @@ class IntegrationItem(ExpressionItem):
     def move_differential(self):
         fm = QFontMetrics(self.QlineEditProxy.font())
         text_width = fm.horizontalAdvance(self.input_field.text())
-        self.DifferentialQlineEditProxy.setPos(text_width+15, 5)
+        self.DifferentialQlineEditProxy.setPos(text_width+22, 7)
         fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
         diff_text_width = fm01.horizontalAdvance(self.differential.text())
         self.setRect(0, 0, text_width+diff_text_width+30, 30)
@@ -205,6 +212,79 @@ class IntegrationItem(ExpressionItem):
                 type(self).var_dict[self.varName] = self.result
             else:
                 self.result = solve.generalEval(expr_str, type(self).var_dict, 'integration', [self.differential.text()])
+            self.result_label.setPlainText(f"= {self.result}")
+        except Exception as e:
+            self.result_label.setPlainText(f"Error: {str(e)}")
+
+class DifferentiationItem(ExpressionItem):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.setPos(x, y)
+        self.setRect(0, 0, 20, 30)
+
+        self.QlineEditProxy.setPos(20, 5)
+
+        self.differential = AutoResizeLineEdit()
+        self.differential.setText("dx")
+        self.differential.setFrame(False)
+        self.differential.setStyleSheet("""
+            AutoResizeLineEdit {
+                background: rgba(255, 255, 255, 0);  /* semi-transparent white */
+                color: black;  /* fully visible text */
+                border: 0px solid gray;
+            }
+        """)
+
+        self.DifferentialQlineEditProxy = QGraphicsProxyWidget(self)
+        self.DifferentialQlineEditProxy.setWidget(self.differential)
+        self.DifferentialQlineEditProxy.setPos(0, 10)
+
+        self.integralSign = QGraphicsTextItem("d", self)
+        self.integralSign.setPos(0, 0)
+        self.integralSign.setFont(QFont('Arial', 8))
+
+#        self.input_field.textChanged.connect(self.move_differential)
+#        self.differential.textChanged.connect(self.move_differential)
+        self.input_field.textChanged.connect(self.move_result_label)
+        self.differential.textChanged.connect(self.move_result_label)
+        self.differential.textChanged.connect(self.move_input_field)
+        self.differential.textChanged.connect(self._on_text_changed)
+
+    def move_result_label(self):
+        fm = QFontMetrics(self.QlineEditProxy.font())
+        text_width = fm.horizontalAdvance(self.input_field.text())
+        fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
+        diff_text_width = fm01.horizontalAdvance(self.differential.text())
+        self.result_label.setPos(text_width+diff_text_width+20, 4)
+        self.setRect(0, 0, text_width+diff_text_width+20, 30)
+
+    def move_input_field(self):
+        fm = QFontMetrics(self.QlineEditProxy.font())
+        text_width = fm.horizontalAdvance(self.input_field.text())
+        fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
+        diff_text_width = fm01.horizontalAdvance(self.differential.text())
+        self.QlineEditProxy.setPos(diff_text_width+5, 4)
+        self.setRect(0, 0, diff_text_width+text_width+20, 30)
+
+    def evaluate_expression(self):
+        expr_str = self.input_field.text().strip()
+        if not expr_str:
+            self.result_label.setPlainText("")
+            return
+        try:
+            if re.search(r'=', expr_str):
+                self.varName = expr_str.split('=')[0].strip()
+                self.expr = expr_str.split('=')[1].strip()
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', [self.differential.text()])
+                type(self).var_dict[self.varName] = self.result
+            elif re.search(r'=.*#', expr_str):
+                self.varName = expr_str.split('=')[0].strip()
+                self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', [self.differential.text()])
+                self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
+                type(self).var_dict[self.varName] = self.result
+            else:
+                self.result = solve.generalEval(expr_str, type(self).var_dict, 'differentiation', [self.differential.text()])
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
