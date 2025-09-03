@@ -36,7 +36,7 @@ class ExpressionItem(QGraphicsRectItem):
         self.description = ''
 
         self.setBrush(QBrush(QColor(230, 230, 250)))
-        self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable)
+        self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable) # type: ignore
         self.setAcceptHoverEvents(True)
 
         self.input_field = AutoResizeLineEdit()
@@ -44,7 +44,7 @@ class ExpressionItem(QGraphicsRectItem):
         self.input_field.setFrame(False)
 
         self.result_label = QGraphicsTextItem("", self)
-        self.result_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.result_label.setTextInteractionFlags(Qt.TextSelectableByMouse) # type: ignore
 
         self.QlineEditProxy = QGraphicsProxyWidget(self)
         self.QlineEditProxy.setWidget(self.input_field)

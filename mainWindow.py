@@ -12,7 +12,7 @@ ITEM_W, ITEM_H = 220, 60
 class View(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocusPolicy(Qt.StrongFocus) # type: ignore
         self.setSceneRect(0, 0, 720, 1280)
     
     ### Keyboard key press event
@@ -29,7 +29,7 @@ class View(QGraphicsView):
 
         text = event.text()
         modifiers = event.modifiers()
-        has_ctrl_alt_meta = bool(modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
+        has_ctrl_alt_meta = bool(modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))  # type: ignore
 
         if text and text.isprintable() and not has_ctrl_alt_meta:
             # Create a new item at the current mouse cursor position (scene coords)
@@ -62,7 +62,7 @@ class View(QGraphicsView):
             event.accept()
             return
 
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_1:
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_1: # type: ignore
             # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
@@ -93,12 +93,12 @@ class View(QGraphicsView):
             event.accept()
             return
         
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal:
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal: # type: ignore
             ExpressionItem.recalculate_all()
             event.accept()
             return
 
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_2:
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_2: # type: ignore
             # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
