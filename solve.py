@@ -30,16 +30,16 @@ def evalAlgEq(eq: str) -> str:
         exec(f"{i} = sc.Symbol('{i}')")
     return eval(eq)
 
-#def integ(eq: str, d_: str) -> str:
-#    eq = insert_multiplication(eq)
-#    symbols: list = [char for char in eq if char.isalpha()]
-#    for i in symbols:
-#        exec(f"{i} = sc.Symbol('{i}')")
-#    exp = sc.simplify(eq)
-#    d_ = d_.replace('d', '')
-#    d_ = sc.simplify(d_)
-#    return str(sc.integrate(exp, d_))
-#
+def integ(eq: str, d_: str) -> str:
+    eq = insert_multiplication(eq)
+    symbols: list = [char for char in eq if char.isalpha()]
+    for i in symbols:
+        exec(f"{i} = sc.Symbol('{i}')")
+    exp = sc.simplify(eq)
+    d_ = d_.replace('d', '')
+    d_ = sc.simplify(d_)
+    return str(sc.integrate(exp, d_))
+
 #def diff(eq: str, d_: str, n: int = 1) -> str:
 #    eq = insert_multiplication(eq)
 #    symbols: list = [char for char in eq if char.isalpha()]
@@ -59,7 +59,7 @@ def evalAlgEq(eq: str) -> str:
 #    eq = f'{[[float(x) for x in i] for i in table]}'
 #    return eval(eq)
 
-def generalEval(eq: str, optionalVarDict: dict = {}) -> (str | float):
+def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: list[str] = []) -> (str | float):
     
     eq = insert_multiplication(eq)
     #tmp_list = list(eq)
@@ -77,7 +77,8 @@ def generalEval(eq: str, optionalVarDict: dict = {}) -> (str | float):
 #        else: n = 1
 #        d_ = re.search(r'.$', d_)[0]
 #        return diff(diffEq, d_, n)
-
+    if operation == 'integration':
+        return integ(eq, additional[0])
     if contains_symbols(eq):
         return evalAlgEq(eq)
     else:
