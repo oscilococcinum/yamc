@@ -93,7 +93,7 @@ class View(QGraphicsView):
             event.accept()
             return
         
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_0:
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal:
             ExpressionItem.recalculate_all()
             event.accept()
             return
