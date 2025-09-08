@@ -95,6 +95,7 @@ class View(QGraphicsView):
         
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal: # type: ignore
             ExpressionItem.recalculate_all()
+            PlotItem.recalculate_all()
             event.accept()
             return
 

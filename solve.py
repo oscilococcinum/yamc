@@ -14,7 +14,6 @@ def contains_units(s: str) -> bool:
     return bool(re.search(r'\[[a-zA-Z]\]', s))
 
 def insert_multiplication(eq: str) -> str:
-    # Insert * between a digit and a letter (e.g., 2x → 2*x)
     return re.sub(r'(\d)([a-zA-Z])', r'\1*\2', eq)
 
 def insert_unit_multiplication(eq: str) -> str:
@@ -54,35 +53,15 @@ def diff(eq: str, d_: str) -> str:
     exp = sc.simplify(eq)
     return str(sc.diff(exp, d_, n))
 
-def mat(eq: str, domian: list[float]) -> list[float]:
-    return [eval(eq) for x in domian]
+def mat(eq: str, domian: ndarray) -> ndarray:
+    return array([eval(eq) for x in domian])
 
-#def csvToTable(path:str) -> str:
-#    path = path.removeprefix('csv:')
-#    with open(path, 'r') as file:
-#        stream: str = file.read()
-#    table: list = stream.split('\n')
-#    table = [x.split(',') for x in table]
-#    eq = f'{[[float(x) for x in i] for i in table]}'
-#    return eval(eq)
-
-def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: list = []) -> (str | float | list):
-    
+def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: ndarray = array([])) -> (str | float | ndarray):
     eq = insert_multiplication(eq)
     tmp_list: list[str] = re.split(r'(\+|\-|\*|\/)', eq)
     result = [str(optionalVarDict.get(ch, ch)) for ch in tmp_list]
     eq = ''.join(result)
 
-#    if bool(re.search(r'^d.*d.*$', eq)):
-#        suffix = re.search(r'd.*$')[0]
-#        diffEq = eq.removeprefix('d')
-#        diffEq = eq.removesuffix(suffix)
-#        d_ = suffix.removeprefix('d')
-#        if re.search(r'\d$', d_):
-#            n = int(re.search(r'\d$', d_)[0])
-#        else: n = 1
-#        d_ = re.search(r'.$', d_)[0]
-#        return diff(diffEq, d_, n)
     if operation == 'integration':
         return integ(eq, additional[0])
     elif operation == 'differentiation':
@@ -93,15 +72,3 @@ def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additio
         return evalAlgEq(eq)
     else:
         return evalEq(eq)
-
-#if __name__ == '__main__':
-#    print(evalEq('2**-5*3+3'))
-#    print(algEvalEq('2x*8y+20'))
-#    print(integ('2x*8y+20', 'dy'))
-#    print(diff('2y**5+6y', 'dy', 1))
-#    print(diff('2y**5+6y', 'dy', 2))
-    #print(generalEval('S2x*8y+20dy'))
-    #print(generalEval('D2y**5+6yd2y'))
-    #print(generalEval('2y**5+6x', {'x':'15a'}))
-    #print(generalEval('S2y**5+6xda', {'x':'15a'}))
-    #print(generalEval('SS2y**5+6xda', {'x':'15a'}))

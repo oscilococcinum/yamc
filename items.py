@@ -190,16 +190,16 @@ class IntegrationItem(ExpressionItem):
             if re.search(r'=', expr_str):
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', [self.differential.text()])
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', array([self.differential.text()]))
                 type(self).var_dict[self.varName] = self.result
             elif re.search(r'=.*#', expr_str):
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', [self.differential.text()])
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', array([self.differential.text()]))
                 self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
                 type(self).var_dict[self.varName] = self.result
             else:
-                self.result = solve.generalEval(expr_str, type(self).var_dict, 'integration', [self.differential.text()])
+                self.result = solve.generalEval(expr_str, type(self).var_dict, 'integration', array([self.differential.text()]))
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
@@ -262,16 +262,16 @@ class DifferentiationItem(ExpressionItem):
             if re.search(r'=', expr_str):
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', [self.differential.text()])
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', array([self.differential.text()]))
                 type(self).var_dict[self.varName] = self.result
             elif re.search(r'=.*#', expr_str):
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', [self.differential.text()])
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', array([self.differential.text()]))
                 self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
                 type(self).var_dict[self.varName] = self.result
             else:
-                self.result = solve.generalEval(expr_str, type(self).var_dict, 'differentiation', [self.differential.text()])
+                self.result = solve.generalEval(expr_str, type(self).var_dict, 'differentiation', array([self.differential.text()]))
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
@@ -336,3 +336,10 @@ class PlotItem(ExpressionItem):
         self.xmax: float=self.params[1]
         self.sampling: int=self.params[2]
         self.domian = linspace(self.xmin, self.xmax, self.sampling)
+
+    @classmethod
+    def recalculate_all(cls):
+        for item in cls.instance_list:
+            item.evaluate_expression()
+            item.update_params()
+            item.plot_expression()
