@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QGraphicsSceneHoverEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
+    QGraphicsSceneContextMenuEvent, QGraphicsSceneHoverEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
     QLineEdit, QGraphicsProxyWidget,
 )
 from PySide6.QtGui import QBrush, QColor, QFontMetrics, QFont, Qt
@@ -78,41 +78,27 @@ class ExpressionItem(QGraphicsRectItem):
         self.result_label.setPos(text_width+25, 4)
         self.setRect(0, 0, text_width+20, 30)
 
-    # Right-click → show the same context menu as QLineEdit, plus "Delete Item"
-    def contextMenuEvent(self, event):
-        # Ensure the text actions (undo/cut/copy/paste) apply to the line edit
-        self.input_field.setFocus()
-        # If click is over the edit, move caret near the click position
-        try:
-            wpos = self.input_field.mapFromGlobal(event.screenPos().toPoint())
-            if self.input_field.rect().contains(wpos):
-                if hasattr(self.input_field, "cursorPositionAt"):
-                    self.input_field.setCursorPosition(self.input_field.cursorPositionAt(wpos))
-        except Exception:
-            pass
-
-        # Build native-looking menu from the line edit, then append our action
+    def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         menu = self.input_field.createStandardContextMenu()
         menu.addSeparator()
         remove_action = menu.addAction("Delete Item")
         chosen = menu.exec(event.screenPos())
         if chosen == remove_action:
-            # Cleanly detach embedded widget, then remove item from the scene
             try:
-                if hasattr(self, "proxy") and self.QlineEditProxy and self.proxy.widget():
+                if hasattr(self, "QlineEditProxy"):
                     self.QlineEditProxy.widget().deleteLater()
-                    self.QlineEditProxy.setWidget(None)
+                    self.QlineEditProxy.setWidget(None) # type: ignore
                     type(self).var_dict.pop(self.varName)
                     type(self).instance_list.remove(self)
             except Exception:
                 pass
+
             scene = self.scene()
-            if scene:
-                scene.removeItem(self)
+            if scene: scene.removeItem(self)
             event.accept()
             return
-        # The standard actions already executed; consume the event
-        event.accept()
+
+        return super().contextMenuEvent(event)
 
     def _on_text_changed(self, _):
         # Skip if the user just cleared the field
@@ -168,8 +154,8 @@ class IntegrationItem(ExpressionItem):
         self.DifferentialQlineEditProxy.setPos(15, 7)
 
         self.integralSign = QGraphicsTextItem("∫", self)
-        self.integralSign.setPos(0, 3)
-        self.integralSign.setFont(QFont('Arial', 15))
+        self.integralSign.setPos(-2, 0)
+        self.integralSign.setFont(QFont('DejaVuSans', 15))
 
         self.input_field.textChanged.connect(self.move_differential)
         self.differential.textChanged.connect(self.move_differential)
@@ -225,6 +211,7 @@ class DifferentiationItem(ExpressionItem):
         self.QlineEditProxy.setPos(20, 5)
 
         self.differential = AutoResizeLineEdit()
+        self.differential.setFont(QFont('DejaVu Sans', 8))
         self.differential.setText("dx")
         self.differential.setFrame(False)
         self.differential.setStyleSheet("""
@@ -241,10 +228,8 @@ class DifferentiationItem(ExpressionItem):
 
         self.integralSign = QGraphicsTextItem("d", self)
         self.integralSign.setPos(0, 0)
-        self.integralSign.setFont(QFont('Arial', 8))
+        self.integralSign.setFont(QFont('DejaVu Sans', 8))
 
-#        self.input_field.textChanged.connect(self.move_differential)
-#        self.differential.textChanged.connect(self.move_differential)
         self.input_field.textChanged.connect(self.move_result_label)
         self.differential.textChanged.connect(self.move_result_label)
         self.differential.textChanged.connect(self.move_input_field)
