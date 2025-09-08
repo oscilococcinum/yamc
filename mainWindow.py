@@ -128,6 +128,37 @@ class View(QGraphicsView):
 
             event.accept()
             return
+
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_3: # type: ignore
+            # Create a new item at the current mouse cursor position (scene coords)
+            global_pos = QCursor.pos()
+            view_pos = self.mapFromGlobal(global_pos)
+            if self.viewport().rect().contains(view_pos):
+                scene_pos = self.mapToScene(view_pos)
+            else:
+                # Fallback to view center if cursor is outside the view
+                scene_pos = self.mapToScene(self.viewport().rect().center())
+            x = scene_pos.x() - ITEM_W / 2
+            y = scene_pos.y() - ITEM_H / 2
+
+
+            item = PlotItem(x, y)
+            scene.addItem(item)
+
+            # Highlight/select the new item
+            scene.clearSelection()
+            item.setSelected(True)
+
+            # Seed char and focus the editor (ensure caret is active)
+            item.input_field.setText(text)
+            # Defer focus to next event loop to ensure proxy is fully realized
+            QTimer.singleShot(0, lambda: (
+                item.input_field.setFocus(),
+                item.input_field.setCursorPosition(len(text))
+            ))
+
+            event.accept()
+            return
         super().keyPressEvent(event)
 
 

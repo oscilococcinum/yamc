@@ -5,7 +5,9 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QBrush, QColor, QFontMetrics, QFont, Qt
 from PySide6.QtCore import QTimer
 import solve
+from ploting import *
 import re
+from numpy import array, linspace, arange, ndarray
 
 ITEM_W, ITEM_H = 220, 60
 
@@ -273,3 +275,64 @@ class DifferentiationItem(ExpressionItem):
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
+
+class PlotItem(ExpressionItem):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.setPos(x, y)
+
+        self.plot = plotWidget(self)
+        self.PlotProxy = QGraphicsProxyWidget(self)
+
+        self.plot_parameters = AutoResizeLineEdit("[0, 100, 100]")
+        self.PlotParametersProxy = QGraphicsProxyWidget(self)
+        self.PlotParametersProxy.setWidget(self.plot_parameters)
+        self.PlotParametersProxy.setPos(0, -20)
+
+        self.params = eval(self.plot_parameters.displayText())
+        self.xmin: float=self.params[0]
+        self.xmax: float=self.params[1]
+        self.sampling: int=self.params[2]
+        self.domian = linspace(self.xmin, self.xmax, self.sampling)
+
+        self.input_field.textChanged.connect(self.move_result_label)
+        self.plot_parameters.textChanged.connect(self.update_params)
+        self._debounce.timeout.connect(self.plot_expression)
+
+    def evaluate_expression(self):
+        expr_str = self.input_field.text().strip()
+        if not expr_str:
+            self.result_label.setPlainText("")
+            return
+        try:
+            if re.search(r'=', expr_str):
+                self.varName = expr_str.split('=')[0].strip()
+                self.expr = expr_str.split('=')[1].strip()
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'ploting', self.domian)
+                type(self).var_dict[self.varName] = self.result
+            elif re.search(r'=.*#', expr_str):
+                self.varName = expr_str.split('=')[0].strip()
+                self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
+                self.result = solve.generalEval(self.expr, type(self).var_dict, 'ploting', self.domian)
+                self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
+                type(self).var_dict[self.varName] = self.result
+            else:
+                self.result = solve.generalEval(expr_str, type(self).var_dict, 'ploting', self.domian)
+            self.result_label.setPlainText(f"= {self.result}")
+        except Exception as e:
+            self.result_label.setPlainText(f"Error: {str(e)}")
+
+    def plot_expression(self):
+        self.plot.axes.cla()
+        self.plot.axes.plot(self.domian, self.result)
+        self.plot.axes.set_xlim(self.xmin, self.xmax)
+        self.plot.draw_idle()
+        self.PlotProxy.setWidget(self.plot)
+        self.PlotProxy.setPos(0, 30)
+
+    def update_params(self):
+        self.params = eval(self.plot_parameters.displayText())
+        self.xmin: float=self.params[0]
+        self.xmax: float=self.params[1]
+        self.sampling: int=self.params[2]
+        self.domian = linspace(self.xmin, self.xmax, self.sampling)

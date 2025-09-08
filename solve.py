@@ -1,4 +1,4 @@
-from numpy import ndarray, array, transpose, linspace, arange, append
+from numpy import ndarray, array, transpose, linspace, arange, append, sin, cos, sinh, cosh, arcsin, arccos, arcsinh, arccosh, pi, e
 import sympy as sc
 import re
 
@@ -54,6 +54,9 @@ def diff(eq: str, d_: str) -> str:
     exp = sc.simplify(eq)
     return str(sc.diff(exp, d_, n))
 
+def mat(eq: str, domian: list[float]) -> list[float]:
+    return [eval(eq) for x in domian]
+
 #def csvToTable(path:str) -> str:
 #    path = path.removeprefix('csv:')
 #    with open(path, 'r') as file:
@@ -63,7 +66,7 @@ def diff(eq: str, d_: str) -> str:
 #    eq = f'{[[float(x) for x in i] for i in table]}'
 #    return eval(eq)
 
-def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: list[str] = []) -> (str | float):
+def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: list = []) -> (str | float | list):
     
     eq = insert_multiplication(eq)
     tmp_list: list[str] = re.split(r'(\+|\-|\*|\/)', eq)
@@ -84,6 +87,8 @@ def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additio
         return integ(eq, additional[0])
     elif operation == 'differentiation':
         return diff(eq, additional[0])
+    elif operation == 'ploting':
+        return mat(eq, additional)
     elif contains_symbols(eq):
         return evalAlgEq(eq)
     else:
