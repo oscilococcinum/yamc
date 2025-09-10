@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QGraphicsSceneContextMenuEvent, QGraphicsSceneHoverEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
-    QLineEdit, QGraphicsProxyWidget,
+    QLineEdit, QGraphicsProxyWidget, QMenu
 )
 from PySide6.QtGui import QBrush, QColor, QFontMetrics, QFont, Qt
 from PySide6.QtCore import QTimer
@@ -300,6 +300,8 @@ class PlotItem(ExpressionItem):
     def __init__(self, x, y, expr='', result='', varName='', desc=''):
         super().__init__(x, y, expr, result, varName, desc)
         self.setPos(x, y)
+
+        self.result_label.setVisible(False)
 
         self.plot = plotWidget(self)
         self.PlotProxy = QGraphicsProxyWidget(self)
