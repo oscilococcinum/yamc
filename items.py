@@ -25,7 +25,7 @@ class AutoResizeLineEdit(QLineEdit):
 
 
 class ExpressionItem(QGraphicsRectItem):
-    instance_list = []
+    instance_list: list = []
     var_dict: dict = {}
 
     def __init__(self, x, y):
@@ -88,10 +88,10 @@ class ExpressionItem(QGraphicsRectItem):
         if chosen == remove_action:
             try:
                 if hasattr(self, "QlineEditProxy"):
-                    self.QlineEditProxy.widget().deleteLater()
-                    self.QlineEditProxy.setWidget(None) # type: ignore
-                    type(self).var_dict.pop(self.varName)
                     type(self).instance_list.remove(self)
+                    type(self).var_dict.pop(self.varName)
+                    self.QlineEditProxy.setWidget(None) # type: ignore
+                    self.QlineEditProxy.widget().deleteLater()
             except Exception:
                 pass
 
@@ -129,10 +129,8 @@ class ExpressionItem(QGraphicsRectItem):
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
     
-    @classmethod
-    def recalculate_all(cls):
-        for item in cls.instance_list:
-            item.evaluate_expression()
+    def recalculate_all(self):
+        self.evaluate_expression()
 
 
 class IntegrationItem(ExpressionItem):
@@ -337,9 +335,8 @@ class PlotItem(ExpressionItem):
         self.sampling: int=self.params[2]
         self.domian = linspace(self.xmin, self.xmax, self.sampling)
 
-    @classmethod
-    def recalculate_all(cls):
-        for item in cls.instance_list:
-            item.evaluate_expression()
-            item.update_params()
-            item.plot_expression()
+#    @classmethod
+    def recalculate_all(self):
+        self.evaluate_expression()
+        self.update_params()
+        self.plot_expression()

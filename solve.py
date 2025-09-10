@@ -44,7 +44,7 @@ def diff(eq: str, d_: str) -> str:
     d_ = d_.removeprefix('d')
     if bool(re.findall(r'^\d+', d_)):
         n: int = int(re.findall(r'^\d+', d_)[0])
-    else: n: int = 1
+    else: n = 1
     d_ = re.findall(r'\D*$', d_)[0]
     d_ = sc.simplify(d_)
     symbols: list = [char for char in eq if char.isalpha()]
