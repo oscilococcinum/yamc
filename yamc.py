@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QApplication, QGraphicsView, QGraphicsScene,
-    QVBoxLayout, QWidget
+    QVBoxLayout, QWidget, QFileDialog
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtCore import Qt, QTimer
@@ -99,6 +99,66 @@ class View(QGraphicsView):
             event.accept()
             return
 
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_S: # type: ignore
+
+            file_path, _ = QFileDialog.getSaveFileName(
+                parent=window,
+                caption="Save File",
+                dir="",
+                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
+            )
+            with open(file_path, 'w') as file:
+                for item in ExpressionItem.instance_list:
+                    file.write(f'{item.save_file()}\n')
+            event.accept()
+            return
+
+        #TODO Add full suport for saving integrals and diffs, currntly dosent support saving differentials, and params for ploting
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
+            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem,
+                             "<class 'items.IntegrationItem'>": IntegrationItem,
+                             "<class 'items.DifferentiationItem'>": DifferentiationItem,
+                             "<class 'items.PlotItem'>": PlotItem}
+            
+            file_path, _ = QFileDialog.getOpenFileName(
+                parent=window,
+                caption="Save File",
+                dir="",
+                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
+            )
+
+            with open(file_path, 'r') as file:
+                for line in file:
+                    parts = line.split(';')
+                    cls = objDict[parts[0]]
+                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
+                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
+                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5])
+                    scene.addItem(obj)
+                    obj._debounce.start()
+                    obj.rearrange_item()
+                    obj.insetr_expr()
+            event.accept()
+            return
+
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W: # type: ignore
+            item: ExpressionItem
+            for item in ExpressionItem.instance_list[:]:
+                type(item).instance_list.remove(item)
+                try:
+                    type(item).var_dict.pop(item.varName)
+                except: pass
+
+                scene = item.scene()
+                if scene: scene.removeItem(item)
+
+                if item.childItems():
+                    for child in item.childItems():
+                        del child
+                    del item
+            event.accept()
+            return
+    
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_2: # type: ignore
             # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()

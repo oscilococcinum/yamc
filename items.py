@@ -7,7 +7,7 @@ from PySide6.QtCore import QTimer
 import solve
 from ploting import *
 import re
-from numpy import array, linspace, arange, ndarray
+from numpy import array, linspace
 
 ITEM_W, ITEM_H = 220, 60
 
@@ -20,7 +20,6 @@ class AutoResizeLineEdit(QLineEdit):
     def adjustSizeToText(self):
         fm = QFontMetrics(self.font())
         text_width = fm.horizontalAdvance(self.text())
-        # Add some padding
         self.setFixedWidth(text_width + 10)
 
 
@@ -28,14 +27,14 @@ class ExpressionItem(QGraphicsRectItem):
     instance_list: list = []
     var_dict: dict = {}
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, expr='', result='', varName='', desc=''):
         super().__init__(0, 0, 220, 30)
         type(self).instance_list.append(self)
         self.setPos(x, y)
-        self.expr = ''
-        self.result = ''
-        self.varName = ''
-        self.description = ''
+        self.expr = expr
+        self.result = result
+        self.varName = varName
+        self.description = desc
 
         self.setBrush(QBrush(QColor(230, 230, 250)))
         self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable) # type: ignore
@@ -80,6 +79,15 @@ class ExpressionItem(QGraphicsRectItem):
         self.result_label.setPos(text_width+25, 4)
         self.setRect(0, 0, text_width+20, 30)
 
+    def rearrange_item(self):
+        self.move_result_label()
+
+    def insetr_expr(self):
+        if self.varName:
+            self.input_field.setText(f'{self.varName}={self.expr}')
+        else:
+            self.input_field.setText(f'{self.expr}')
+
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         menu = self.input_field.createStandardContextMenu()
         menu.addSeparator()
@@ -103,7 +111,6 @@ class ExpressionItem(QGraphicsRectItem):
         return super().contextMenuEvent(event)
 
     def _on_text_changed(self, _):
-        # Skip if the user just cleared the field
         self._debounce.start()
 
     def evaluate_expression(self):
@@ -124,6 +131,7 @@ class ExpressionItem(QGraphicsRectItem):
                 self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
                 type(self).var_dict[self.varName] = self.result
             else:
+                self.expr = expr_str.strip()
                 self.result = solve.generalEval(expr_str, type(self).var_dict)
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
@@ -132,10 +140,14 @@ class ExpressionItem(QGraphicsRectItem):
     def recalculate_all(self):
         self.evaluate_expression()
 
+    def save_file(self) -> str:
+        stream = f'{type(self)};{self.pos()};{self.expr};{self.result};{self.varName};{self.description}'
+        stream = stream.replace('\n', '')
+        return stream
 
 class IntegrationItem(ExpressionItem):
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, x, y, expr='', result='', varName='', desc=''):
+        super().__init__(x, y, expr, result, varName, desc)
         self.setPos(x, y)
 
         self.QlineEditProxy.setPos(10, 5)
@@ -179,6 +191,10 @@ class IntegrationItem(ExpressionItem):
         self.result_label.setPos(text_width+diff_text_width+30, 4)
         self.setRect(0, 0, text_width+diff_text_width+30, 30)
 
+    def rearrange_item(self):
+        self.move_result_label()
+        self.move_differential()
+
     def evaluate_expression(self):
         expr_str = self.input_field.text().strip()
         if not expr_str:
@@ -197,14 +213,15 @@ class IntegrationItem(ExpressionItem):
                 self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
                 type(self).var_dict[self.varName] = self.result
             else:
+                self.expr = expr_str.strip()
                 self.result = solve.generalEval(expr_str, type(self).var_dict, 'integration', array([self.differential.text()]))
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
 
 class DifferentiationItem(ExpressionItem):
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, x, y, expr='', result='', varName='', desc=''):
+        super().__init__(x, y, expr, result, varName, desc)
         self.setPos(x, y)
         self.setRect(0, 0, 20, 30)
 
@@ -251,6 +268,10 @@ class DifferentiationItem(ExpressionItem):
         self.QlineEditProxy.setPos(diff_text_width+5, 4)
         self.setRect(0, 0, diff_text_width+text_width+20, 30)
 
+    def rearrange_item(self):
+        self.move_result_label()
+        self.move_input_field()
+
     def evaluate_expression(self):
         expr_str = self.input_field.text().strip()
         if not expr_str:
@@ -269,14 +290,15 @@ class DifferentiationItem(ExpressionItem):
                 self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
                 type(self).var_dict[self.varName] = self.result
             else:
+                self.expr = expr_str.strip()
                 self.result = solve.generalEval(expr_str, type(self).var_dict, 'differentiation', array([self.differential.text()]))
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
             self.result_label.setPlainText(f"Error: {str(e)}")
 
 class PlotItem(ExpressionItem):
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, x, y, expr='', result='', varName='', desc=''):
+        super().__init__(x, y, expr, result, varName, desc)
         self.setPos(x, y)
 
         self.plot = plotWidget(self)
@@ -315,6 +337,7 @@ class PlotItem(ExpressionItem):
                 self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
                 type(self).var_dict[self.varName] = self.result
             else:
+                self.expr = expr_str.strip()
                 self.result = solve.generalEval(expr_str, type(self).var_dict, 'ploting', self.domian)
             self.result_label.setPlainText(f"= {self.result}")
         except Exception as e:
@@ -335,7 +358,6 @@ class PlotItem(ExpressionItem):
         self.sampling: int=self.params[2]
         self.domian = linspace(self.xmin, self.xmax, self.sampling)
 
-#    @classmethod
     def recalculate_all(self):
         self.evaluate_expression()
         self.update_params()
