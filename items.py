@@ -1,9 +1,9 @@
 from PySide6.QtWidgets import (
     QGraphicsSceneContextMenuEvent, QGraphicsSceneHoverEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
-    QLineEdit, QGraphicsProxyWidget, QMenu
+    QLineEdit, QGraphicsProxyWidget, QGraphicsScene, QWidget
 )
-from PySide6.QtGui import QBrush, QColor, QFontMetrics, QFont, Qt
-from PySide6.QtCore import QTimer
+from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QFont, Qt
+from PySide6.QtCore import QTimer, Signal
 import solve
 from ploting import *
 import re
@@ -12,16 +12,31 @@ from numpy import array, linspace
 ITEM_W, ITEM_H = 220, 60
 
 class AutoResizeLineEdit(QLineEdit):
-    def __init__(self, text="", parent=None):
-        super().__init__(text, parent)
+    focused: Signal = Signal()
+    def __init__(self, text="", gparent=None):
+        super().__init__(text)
+        self.gparent: (QGraphicsItem | None) = gparent
         self.textChanged.connect(self.adjustSizeToText)
         self.adjustSizeToText()
+        self.focused.connect(self.select_parent)
 
     def adjustSizeToText(self):
         fm = QFontMetrics(self.font())
         text_width = fm.horizontalAdvance(self.text())
         self.setFixedWidth(text_width + 10)
 
+    def select_parent(self):
+        if self.gparent:
+            scene: QGraphicsScene = self.gparent.scene()
+            scene.clearSelection()
+            self.gparent.setSelected(True)
+        else: pass
+
+    def focusInEvent(self, event: QFocusEvent) -> None:
+        super().focusInEvent(event)
+        self.focused.emit()
+
+        
 
 class ExpressionItem(QGraphicsRectItem):
     instance_list: list = []
@@ -38,9 +53,9 @@ class ExpressionItem(QGraphicsRectItem):
 
         self.setBrush(QBrush(QColor(230, 230, 250)))
         self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable) # type: ignore
-        self.setAcceptHoverEvents(True)
+        #self.setAcceptHoverEvents(True)
 
-        self.input_field = AutoResizeLineEdit()
+        self.input_field = AutoResizeLineEdit('', self)
         self.input_field.setPlaceholderText("Enter expression")
         self.input_field.setFrame(False)
 
@@ -60,18 +75,24 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce.setInterval(300)  # ms
         self._debounce.timeout.connect(self.evaluate_expression)
         self.input_field.textChanged.connect(self._on_text_changed)
-    
-    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        self.setSelected(True)
-        self.input_field.setFocus()
-        self.input_field.setReadOnly(False)
-        return super().hoverEnterEvent(event)
+#        self.input_field.focused.connect(self.input_field.select_parent())
+        
+#    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
+#        self.setSelected(True)
+#        self.input_field.setFocus()
+#        self.input_field.setReadOnly(False)
+#        return super().hoverEnterEvent(event)
+#
+#    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
+#        self.setSelected(False)
+#        self.input_field.clearFocus()
+#        self.input_field.setReadOnly(True)
+#        return super().hoverLeaveEvent(event)
 
-    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-        self.setSelected(False)
-        self.input_field.clearFocus()
-        self.input_field.setReadOnly(True)
-        return super().hoverLeaveEvent(event)
+#    def set_selected(self):
+#        scene: QGraphicsScene = self.scene()
+#        scene.clearSelection()
+#        self.setSelected(True)
 
     def move_result_label(self):
         fm = QFontMetrics(self.QlineEditProxy.font())
@@ -152,8 +173,7 @@ class IntegrationItem(ExpressionItem):
 
         self.QlineEditProxy.setPos(10, 5)
 
-        self.differential = AutoResizeLineEdit()
-        self.differential.setText("dx")
+        self.differential = AutoResizeLineEdit('dx', self)
         self.differential.setStyleSheet("""
             AutoResizeLineEdit {
                 background: rgba(255, 255, 255, 0);  /* semi-transparent white */
@@ -227,9 +247,8 @@ class DifferentiationItem(ExpressionItem):
 
         self.QlineEditProxy.setPos(20, 5)
 
-        self.differential = AutoResizeLineEdit()
+        self.differential = AutoResizeLineEdit('dx', self)
         self.differential.setFont(QFont('DejaVu Sans', 8))
-        self.differential.setText("dx")
         self.differential.setFrame(False)
         self.differential.setStyleSheet("""
             AutoResizeLineEdit {
@@ -306,7 +325,7 @@ class PlotItem(ExpressionItem):
         self.plot = plotWidget(self)
         self.PlotProxy = QGraphicsProxyWidget(self)
 
-        self.plot_parameters = AutoResizeLineEdit("[0, 100, 100]")
+        self.plot_parameters = AutoResizeLineEdit("[0, 100, 100]", self)
         self.PlotParametersProxy = QGraphicsProxyWidget(self)
         self.PlotParametersProxy.setWidget(self.plot_parameters)
         self.PlotParametersProxy.setPos(0, -20)

@@ -15,7 +15,6 @@ class View(QGraphicsView):
         self.setFocusPolicy(Qt.StrongFocus) # type: ignore
         self.setSceneRect(0, 0, 720, 1280)
     
-    ### Keyboard key press event
     def keyPressEvent(self, event):
         focus_w = QApplication.focusWidget()
         if isinstance(focus_w, QLineEdit):
@@ -32,13 +31,11 @@ class View(QGraphicsView):
         has_ctrl_alt_meta = bool(modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))  # type: ignore
 
         if text and text.isprintable() and not has_ctrl_alt_meta:
-            # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
             if self.viewport().rect().contains(view_pos):
                 scene_pos = self.mapToScene(view_pos)
             else:
-                # Fallback to view center if cursor is outside the view
                 scene_pos = self.mapToScene(self.viewport().rect().center())
             x = scene_pos.x() - ITEM_W / 2
             y = scene_pos.y() - ITEM_H / 2
@@ -47,13 +44,10 @@ class View(QGraphicsView):
             item = ExpressionItem(x, y)
             scene.addItem(item)
 
-            # Highlight/select the new item
             scene.clearSelection()
             item.setSelected(True)
 
-            # Seed char and focus the editor (ensure caret is active)
             item.input_field.setText(text)
-            # Defer focus to next event loop to ensure proxy is fully realized
             QTimer.singleShot(0, lambda: (
                 item.input_field.setFocus(),
                 item.input_field.setCursorPosition(len(text))
@@ -63,13 +57,11 @@ class View(QGraphicsView):
             return
 
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_1: # type: ignore
-            # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
             if self.viewport().rect().contains(view_pos):
                 scene_pos = self.mapToScene(view_pos)
             else:
-                # Fallback to view center if cursor is outside the view
                 scene_pos = self.mapToScene(self.viewport().rect().center())
             x = scene_pos.x() - ITEM_W / 2
             y = scene_pos.y() - ITEM_H / 2
@@ -78,13 +70,10 @@ class View(QGraphicsView):
             item = IntegrationItem(x, y)
             scene.addItem(item)
 
-            # Highlight/select the new item
             scene.clearSelection()
             item.setSelected(True)
 
-            # Seed char and focus the editor (ensure caret is active)
             item.input_field.setText(text)
-            # Defer focus to next event loop to ensure proxy is fully realized
             QTimer.singleShot(0, lambda: (
                 item.input_field.setFocus(),
                 item.input_field.setCursorPosition(len(text))
@@ -160,13 +149,11 @@ class View(QGraphicsView):
             return
     
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_2: # type: ignore
-            # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
             if self.viewport().rect().contains(view_pos):
                 scene_pos = self.mapToScene(view_pos)
             else:
-                # Fallback to view center if cursor is outside the view
                 scene_pos = self.mapToScene(self.viewport().rect().center())
             x = scene_pos.x() - ITEM_W / 2
             y = scene_pos.y() - ITEM_H / 2
@@ -175,13 +162,10 @@ class View(QGraphicsView):
             item = DifferentiationItem(x, y)
             scene.addItem(item)
 
-            # Highlight/select the new item
             scene.clearSelection()
             item.setSelected(True)
 
-            # Seed char and focus the editor (ensure caret is active)
             item.input_field.setText(text)
-            # Defer focus to next event loop to ensure proxy is fully realized
             QTimer.singleShot(0, lambda: (
                 item.input_field.setFocus(),
                 item.input_field.setCursorPosition(len(text))
@@ -191,13 +175,11 @@ class View(QGraphicsView):
             return
 
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_3: # type: ignore
-            # Create a new item at the current mouse cursor position (scene coords)
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
             if self.viewport().rect().contains(view_pos):
                 scene_pos = self.mapToScene(view_pos)
             else:
-                # Fallback to view center if cursor is outside the view
                 scene_pos = self.mapToScene(self.viewport().rect().center())
             x = scene_pos.x() - ITEM_W / 2
             y = scene_pos.y() - ITEM_H / 2
@@ -206,13 +188,10 @@ class View(QGraphicsView):
             item = PlotItem(x, y)
             scene.addItem(item)
 
-            # Highlight/select the new item
             scene.clearSelection()
             item.setSelected(True)
 
-            # Seed char and focus the editor (ensure caret is active)
             item.input_field.setText(text)
-            # Defer focus to next event loop to ensure proxy is fully realized
             QTimer.singleShot(0, lambda: (
                 item.input_field.setFocus(),
                 item.input_field.setCursorPosition(len(text))
@@ -239,7 +218,6 @@ class mainWindow(QWidget):
     def add_expression_item(self, x=50, y=50, seed_text=""):
         item = ExpressionItem(x, y)
         self.scene.addItem(item)
-        # Highlight and focus when adding programmatically as well
         self.scene.clearSelection()
         item.setSelected(True)
         if seed_text:
