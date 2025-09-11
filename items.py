@@ -16,8 +16,16 @@ class AutoResizeLineEdit(QLineEdit):
     def __init__(self, text="", gparent=None):
         super().__init__(text)
         self.gparent: (QGraphicsItem | None) = gparent
-        self.textChanged.connect(self.adjustSizeToText)
+        self.setStyleSheet("""
+            AutoResizeLineEdit {
+                background: rgba(255, 255, 255, 0);  /* semi-transparent white */
+                color: black;  /* fully visible text */
+                border: 0px solid gray;
+            }
+        """)
+
         self.adjustSizeToText()
+        self.textChanged.connect(self.adjustSizeToText)
         self.focused.connect(self.select_parent)
 
     def adjustSizeToText(self):
@@ -51,9 +59,9 @@ class ExpressionItem(QGraphicsRectItem):
         self.varName = varName
         self.description = desc
 
-        self.setBrush(QBrush(QColor(230, 230, 250)))
+        self.setBrush(QBrush(QColor(0, 0, 0, 0)))
+        self.setPen(Qt.NoPen) # type: ignore
         self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable) # type: ignore
-        #self.setAcceptHoverEvents(True)
 
         self.input_field = AutoResizeLineEdit('', self)
         self.input_field.setPlaceholderText("Enter expression")
@@ -69,36 +77,17 @@ class ExpressionItem(QGraphicsRectItem):
         self.input_field.returnPressed.connect(self.evaluate_expression)
         self.input_field.textChanged.connect(self.move_result_label)
 
-        # NEW: Debounced live evaluation
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
         self._debounce.timeout.connect(self.evaluate_expression)
         self.input_field.textChanged.connect(self._on_text_changed)
-#        self.input_field.focused.connect(self.input_field.select_parent())
         
-#    def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-#        self.setSelected(True)
-#        self.input_field.setFocus()
-#        self.input_field.setReadOnly(False)
-#        return super().hoverEnterEvent(event)
-#
-#    def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent) -> None:
-#        self.setSelected(False)
-#        self.input_field.clearFocus()
-#        self.input_field.setReadOnly(True)
-#        return super().hoverLeaveEvent(event)
-
-#    def set_selected(self):
-#        scene: QGraphicsScene = self.scene()
-#        scene.clearSelection()
-#        self.setSelected(True)
-
     def move_result_label(self):
         fm = QFontMetrics(self.QlineEditProxy.font())
         text_width = fm.horizontalAdvance(self.input_field.text())
-        self.result_label.setPos(text_width+25, 4)
-        self.setRect(0, 0, text_width+20, 30)
+        self.result_label.setPos(text_width+8, 2)
+        self.setRect(0, 0, text_width+10, 30)
 
     def rearrange_item(self):
         self.move_result_label()
@@ -171,22 +160,15 @@ class IntegrationItem(ExpressionItem):
         super().__init__(x, y, expr, result, varName, desc)
         self.setPos(x, y)
 
-        self.QlineEditProxy.setPos(10, 5)
+        self.QlineEditProxy.setPos(10, 7)
 
         self.differential = AutoResizeLineEdit('dx', self)
-        self.differential.setStyleSheet("""
-            AutoResizeLineEdit {
-                background: rgba(255, 255, 255, 0);  /* semi-transparent white */
-                color: black;  /* fully visible text */
-                border: 0px solid gray;
-            }
-        """)
         self.DifferentialQlineEditProxy = QGraphicsProxyWidget(self)
         self.DifferentialQlineEditProxy.setWidget(self.differential)
         self.DifferentialQlineEditProxy.setPos(15, 7)
 
         self.integralSign = QGraphicsTextItem("∫", self)
-        self.integralSign.setPos(-2, 0)
+        self.integralSign.setPos(-3, -2)
         self.integralSign.setFont(QFont('DejaVuSans', 15))
 
         self.input_field.textChanged.connect(self.move_differential)
@@ -198,18 +180,18 @@ class IntegrationItem(ExpressionItem):
     def move_differential(self):
         fm = QFontMetrics(self.QlineEditProxy.font())
         text_width = fm.horizontalAdvance(self.input_field.text())
-        self.DifferentialQlineEditProxy.setPos(text_width+22, 7)
+        self.DifferentialQlineEditProxy.setPos(text_width+10, 7)
         fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
         diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.setRect(0, 0, text_width+diff_text_width+30, 30)
+        self.setRect(0, 0, text_width+diff_text_width+14, 30)
 
     def move_result_label(self):
         fm = QFontMetrics(self.QlineEditProxy.font())
         text_width = fm.horizontalAdvance(self.input_field.text())
         fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
         diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.result_label.setPos(text_width+diff_text_width+30, 4)
-        self.setRect(0, 0, text_width+diff_text_width+30, 30)
+        self.result_label.setPos(text_width+diff_text_width+10, 4)
+        self.setRect(0, 0, text_width+diff_text_width+14, 30)
 
     def rearrange_item(self):
         self.move_result_label()
@@ -245,19 +227,10 @@ class DifferentiationItem(ExpressionItem):
         self.setPos(x, y)
         self.setRect(0, 0, 20, 30)
 
-        self.QlineEditProxy.setPos(20, 5)
+        self.QlineEditProxy.setPos(15, 7)
 
         self.differential = AutoResizeLineEdit('dx', self)
         self.differential.setFont(QFont('DejaVu Sans', 8))
-        self.differential.setFrame(False)
-        self.differential.setStyleSheet("""
-            AutoResizeLineEdit {
-                background: rgba(255, 255, 255, 0);  /* semi-transparent white */
-                color: black;  /* fully visible text */
-                border: 0px solid gray;
-            }
-        """)
-
         self.DifferentialQlineEditProxy = QGraphicsProxyWidget(self)
         self.DifferentialQlineEditProxy.setWidget(self.differential)
         self.DifferentialQlineEditProxy.setPos(0, 10)
@@ -276,8 +249,8 @@ class DifferentiationItem(ExpressionItem):
         text_width = fm.horizontalAdvance(self.input_field.text())
         fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
         diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.result_label.setPos(text_width+diff_text_width+20, 4)
-        self.setRect(0, 0, text_width+diff_text_width+20, 30)
+        self.result_label.setPos(text_width+diff_text_width+5, 4)
+        self.setRect(0, 0, text_width+diff_text_width+9, 30)
 
     def move_input_field(self):
         fm = QFontMetrics(self.QlineEditProxy.font())
@@ -285,7 +258,7 @@ class DifferentiationItem(ExpressionItem):
         fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
         diff_text_width = fm01.horizontalAdvance(self.differential.text())
         self.QlineEditProxy.setPos(diff_text_width+5, 4)
-        self.setRect(0, 0, diff_text_width+text_width+20, 30)
+        self.setRect(0, 0, text_width+diff_text_width+9, 30)
 
     def rearrange_item(self):
         self.move_result_label()
@@ -324,11 +297,12 @@ class PlotItem(ExpressionItem):
 
         self.plot = plotWidget(self)
         self.PlotProxy = QGraphicsProxyWidget(self)
+        self.PlotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
 
-        self.plot_parameters = AutoResizeLineEdit("[0, 100, 100]", self)
+        self.plot_parameters = AutoResizeLineEdit("[-10, 10, 100]", self)
         self.PlotParametersProxy = QGraphicsProxyWidget(self)
         self.PlotParametersProxy.setWidget(self.plot_parameters)
-        self.PlotParametersProxy.setPos(0, -20)
+        self.PlotParametersProxy.setPos(300, 5)
 
         self.params = eval(self.plot_parameters.displayText())
         self.xmin: float=self.params[0]
@@ -370,7 +344,7 @@ class PlotItem(ExpressionItem):
         self.plot.axes.set_xlim(self.xmin, self.xmax)
         self.plot.draw_idle()
         self.PlotProxy.setWidget(self.plot)
-        self.PlotProxy.setPos(0, 30)
+        self.PlotProxy.setPos(-60, -17)
 
     def update_params(self):
         self.params = eval(self.plot_parameters.displayText())
@@ -383,3 +357,6 @@ class PlotItem(ExpressionItem):
         self.evaluate_expression()
         self.update_params()
         self.plot_expression()
+
+    def rearrange_item(self):
+        pass
