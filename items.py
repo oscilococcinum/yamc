@@ -11,6 +11,14 @@ from numpy import array, linspace
 
 ITEM_W, ITEM_H = 220, 60
 
+class QGraphicsTextLabel(QGraphicsTextItem):
+    def __init__(self, text='', parent=None) -> None:
+        super().__init__(text, parent)
+        self.visibility_overwriten: bool = False
+
+    def overwrite_visibility(self, isOverwritten: bool) -> None:
+        self.visibility_overwriten = isOverwritten
+
 class AutoResizeLineEdit(QLineEdit):
     focused: Signal = Signal()
     def __init__(self, text="", gparent=None):
@@ -67,7 +75,7 @@ class ExpressionItem(QGraphicsRectItem):
         self.input_field.setPlaceholderText("Enter expression")
         self.input_field.setFrame(False)
 
-        self.result_label = QGraphicsTextItem("", self)
+        self.result_label = QGraphicsTextLabel("", self)
         self.result_label.setTextInteractionFlags(Qt.TextSelectableByMouse) # type: ignore
 
         self.QlineEditProxy = QGraphicsProxyWidget(self)
@@ -130,11 +138,15 @@ class ExpressionItem(QGraphicsRectItem):
             return
         try:
             if re.search(r'=', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict)
                 type(self).var_dict[self.varName] = self.result
             elif re.search(r'=.*#', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict)
@@ -204,11 +216,15 @@ class IntegrationItem(ExpressionItem):
             return
         try:
             if re.search(r'=', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', array([self.differential.text()]))
                 type(self).var_dict[self.varName] = self.result
             elif re.search(r'=.*#', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', array([self.differential.text()]))
@@ -271,11 +287,15 @@ class DifferentiationItem(ExpressionItem):
             return
         try:
             if re.search(r'=', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', array([self.differential.text()]))
                 type(self).var_dict[self.varName] = self.result
             elif re.search(r'=.*#', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', array([self.differential.text()]))
@@ -321,11 +341,15 @@ class PlotItem(ExpressionItem):
             return
         try:
             if re.search(r'=', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict, 'ploting', self.domian)
                 type(self).var_dict[self.varName] = self.result
             elif re.search(r'=.*#', expr_str):
+                if not self.result_label.visibility_overwriten:
+                    self.result_label.hide()
                 self.varName = expr_str.split('=')[0].strip()
                 self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
                 self.result = solve.generalEval(self.expr, type(self).var_dict, 'ploting', self.domian)

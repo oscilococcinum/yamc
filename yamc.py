@@ -7,7 +7,6 @@ from PySide6.QtCore import Qt, QTimer
 from items import *
 import sys
 
-ITEM_W, ITEM_H = 220, 60
 
 class View(QGraphicsView):
     def __init__(self, parent=None):
@@ -17,12 +16,9 @@ class View(QGraphicsView):
     
     def keyPressEvent(self, event):
         focus_w = QApplication.focusWidget()
-        if isinstance(focus_w, QLineEdit):
-            super().keyPressEvent(event)
-            return
-
         scene = self.scene()
-        if scene and scene.selectedItems():
+
+        if isinstance(focus_w, QLineEdit):
             super().keyPressEvent(event)
             return
 
@@ -30,15 +26,15 @@ class View(QGraphicsView):
         modifiers = event.modifiers()
         has_ctrl_alt_meta = bool(modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))  # type: ignore
 
-        if text and text.isprintable() and not has_ctrl_alt_meta:
+        if text and text.isprintable() and not has_ctrl_alt_meta and not scene.focusItem():
             global_pos = QCursor.pos()
             view_pos = self.mapFromGlobal(global_pos)
             if self.viewport().rect().contains(view_pos):
                 scene_pos = self.mapToScene(view_pos)
             else:
                 scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x() - ITEM_W / 2
-            y = scene_pos.y() - ITEM_H / 2
+            x = scene_pos.x()
+            y = scene_pos.y()
 
 
             item = ExpressionItem(x, y)
@@ -63,9 +59,8 @@ class View(QGraphicsView):
                 scene_pos = self.mapToScene(view_pos)
             else:
                 scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x() - ITEM_W / 2
-            y = scene_pos.y() - ITEM_H / 2
-
+            x = scene_pos.x()
+            y = scene_pos.y()
 
             item = IntegrationItem(x, y)
             scene.addItem(item)
@@ -155,9 +150,8 @@ class View(QGraphicsView):
                 scene_pos = self.mapToScene(view_pos)
             else:
                 scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x() - ITEM_W / 2
-            y = scene_pos.y() - ITEM_H / 2
-
+            x = scene_pos.x()
+            y = scene_pos.y()
 
             item = DifferentiationItem(x, y)
             scene.addItem(item)
@@ -181,9 +175,8 @@ class View(QGraphicsView):
                 scene_pos = self.mapToScene(view_pos)
             else:
                 scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x() - ITEM_W / 2
-            y = scene_pos.y() - ITEM_H / 2
-
+            x = scene_pos.x()
+            y = scene_pos.y()
 
             item = PlotItem(x, y)
             scene.addItem(item)
@@ -197,6 +190,18 @@ class View(QGraphicsView):
                 item.input_field.setCursorPosition(len(text))
             ))
 
+            event.accept()
+            return
+        
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Comma: # type: ignore
+            selection: list[ExpressionItem] = scene.selectedItems() #type: ignore
+            for i in selection:
+                if i.result_label.isVisible():
+                    i.result_label.hide()
+                    i.result_label.overwrite_visibility(False)
+                else:
+                    i.result_label.show()
+                    i.result_label.overwrite_visibility(True)
             event.accept()
             return
         super().keyPressEvent(event)

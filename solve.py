@@ -1,9 +1,32 @@
 from numpy import ndarray, array, transpose, linspace, arange, append, pi, e
-from sympy import sympify, simplify, integrate, diff, latex, Symbol, log, sin, cos, sinh, cosh, tan, tanh, asin, acos, asinh, acosh, ln, sqrt
+from sympy import sympify, solve, simplify, integrate, diff, latex, Symbol, symbols, log, sin, cos, sinh, cosh, tan, tanh, asin, acos, asinh, acosh, ln, sqrt
+from sympy.physics.units.systems.si import SI
+from sympy.physics.units import Quantity, convert_to, meter, kilogram, second, ampere, kelvin, mol, candela, newton, pascal
 import re
 
 
-unit_dict: dict = {"m":"m", "kg":"kg", "s":"s", "A":"A", "K":"K", "mol":"mol", "cd":"cd"}
+SI_UNITS: dict = {"[m]":"[m]", "[kg]":"[kg]", "[s]":"[s]", "[A]":"[A]", "[K]":"[K]", "[mol]":"[mol]", "[cd]":"[cd]"}
+SI_EXTENDED: dict = {'N':'kg*m*s**-1'}
+
+#class GeneralSolver():
+#    shared_vars: list[dict] = []
+#    def __init__(self) -> None:
+#        pass
+#
+#    @staticmethod
+#    def getUnitsEq(eqWords: list[str]) -> list:
+#        result = [re.split(r'([a-zA-Z0-9]+)(\[\w+?\]|\[-\])', char) for char in eqWords]
+#        result = [[s for s in row if s] for row in result]
+#        result = [[row[0], '[-]'] if len(row)==1 and row[0] not in ['**-', '**', '*', '/', '-', '+'] else row for row in result]
+#        return [row[1] if len(row)>1 else row for row in result]
+#
+#    @staticmethod
+#    def separateEqWords(eq: str) -> list[str]:
+#        return re.split(r'(\*\*\-[0-9]+|\*\*|\*|\/|\-|\+)', eq)
+#
+#    @staticmethod
+#    def isNumerical(eq: str):
+#        return not bool(re.findall(r'[a-zA-Z]', eq))
 
 def contains_symbols(s: str) -> bool:
     """Check if the string contains at least one letter (a-z or A-Z)."""
@@ -11,10 +34,16 @@ def contains_symbols(s: str) -> bool:
 
 def contains_units(s: str) -> bool:
     """Check if the string contains at least one unit ([a-z or A-Z])."""
-    return bool(re.search(r'\[[a-zA-Z]\]', s))
+    return bool(re.search(r'\[[a-zA-Z0-9]+\]', s))
 
 def insert_multiplication(eq: str) -> str:
     return re.sub(r'(\d)([a-zA-Z])', r'\1*\2', eq)
+
+def insert_par_before_div(eq: str) -> str:
+    return re.sub(r'(\/)(.*$)', r'\1(\2)', eq)
+
+def insert_units_multiplication(eq: str) -> str:
+    return re.sub(r'([a-zA-Z0-9]+)(\[\w+?\])', r'\g<1>*\g<2>', eq)
 
 def insert_unit_multiplication(eq: str) -> str:
     return re.sub(r'(\d)([\[a-zA-Z\]])', r'\1*\2', eq)
@@ -61,6 +90,7 @@ def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additio
     tmp_list: list[str] = re.split(r'(\+|\-|\*|\/)', eq)
     result = [str(optionalVarDict.get(ch, ch)) for ch in tmp_list]
     eq = ''.join(result)
+    eq = insert_par_before_div(eq)
 
     if operation == 'integration':
         return integ(eq, additional[0])
