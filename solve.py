@@ -1,32 +1,17 @@
-from numpy import ndarray, array, transpose, linspace, arange, append, pi, e
-from sympy import sympify, solve, simplify, integrate, diff, latex, Symbol, symbols, log, sin, cos, sinh, cosh, tan, tanh, asin, acos, asinh, acosh, ln, sqrt
+from numpy import ndarray, array, transpose, linspace, arange, append, meshgrid, e, pi
+from sympy import sympify, lambdify, solve, simplify, integrate, diff, latex, Symbol, symbols, log, sin, cos, sinh, cosh, tan, tanh, asin, acos, asinh, acosh, ln, sqrt
 from sympy.physics.units.systems.si import SI
 from sympy.physics.units import Quantity, convert_to, meter, kilogram, second, ampere, kelvin, mol, candela, newton, pascal
 import re
 
 
-SI_UNITS: dict = {"[m]":"[m]", "[kg]":"[kg]", "[s]":"[s]", "[A]":"[A]", "[K]":"[K]", "[mol]":"[mol]", "[cd]":"[cd]"}
-SI_EXTENDED: dict = {'N':'kg*m*s**-1'}
+SI_UNITS: list = ["m", "kg", "s", "A", "K", "mol", "cd"]
+SI_EXTENDED: dict = {'kg*m*s**-1':"N"}
 
-#class GeneralSolver():
-#    shared_vars: list[dict] = []
-#    def __init__(self) -> None:
-#        pass
-#
-#    @staticmethod
-#    def getUnitsEq(eqWords: list[str]) -> list:
-#        result = [re.split(r'([a-zA-Z0-9]+)(\[\w+?\]|\[-\])', char) for char in eqWords]
-#        result = [[s for s in row if s] for row in result]
-#        result = [[row[0], '[-]'] if len(row)==1 and row[0] not in ['**-', '**', '*', '/', '-', '+'] else row for row in result]
-#        return [row[1] if len(row)>1 else row for row in result]
-#
-#    @staticmethod
-#    def separateEqWords(eq: str) -> list[str]:
-#        return re.split(r'(\*\*\-[0-9]+|\*\*|\*|\/|\-|\+)', eq)
-#
-#    @staticmethod
-#    def isNumerical(eq: str):
-#        return not bool(re.findall(r'[a-zA-Z]', eq))
+def deter_plot_type(eq) -> int:
+    eq = insert_multiplication(eq)
+    syms = re.findall(r'[a-zA-Z]+', eq)
+    return len(syms)
 
 def contains_symbols(s: str) -> bool:
     """Check if the string contains at least one letter (a-z or A-Z)."""
@@ -85,7 +70,16 @@ def differ(eq: str, d_: str) -> str:
 def mat(eq: str, domian: ndarray) -> ndarray:
     return array([eval(eq) for x in domian])
 
-def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: ndarray = array([])) -> (str | float | ndarray):
+def mat_contour(eq: str, domian: ndarray):
+    X, Y = meshgrid(domian[0], domian[1])
+    x, y = symbols('x y')
+    expr = sympify(eq)
+    f = lambdify((x, y), expr, modules='numpy')
+    X, Y = meshgrid(X, Y)
+    Z = f(X, Y)
+    return Z, X, Y
+
+def generalEval(eq: str, optionalVarDict: dict = {}, operation:str = '', additional: ndarray = array([])) -> (str | float | ndarray | tuple):
     eq = insert_multiplication(eq)
     tmp_list: list[str] = re.split(r'(\+|\-|\*|\/)', eq)
     result = [str(optionalVarDict.get(ch, ch)) for ch in tmp_list]

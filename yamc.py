@@ -15,12 +15,7 @@ class View(QGraphicsView):
         self.setSceneRect(0, 0, 720, 1280)
     
     def keyPressEvent(self, event):
-        focus_w = QApplication.focusWidget()
         scene = self.scene()
-
-        if isinstance(focus_w, QLineEdit):
-            super().keyPressEvent(event)
-            return
 
         text = event.text()
         modifiers = event.modifiers()
@@ -193,7 +188,7 @@ class View(QGraphicsView):
             event.accept()
             return
         
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Comma: # type: ignore
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key.Key_Period: # type: ignore
             selection: list[ExpressionItem] = scene.selectedItems() #type: ignore
             for i in selection:
                 if i.result_label.isVisible():
@@ -219,20 +214,6 @@ class mainWindow(QWidget):
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
         layout.addWidget(self.view)
-
-    def add_expression_item(self, x=50, y=50, seed_text=""):
-        item = ExpressionItem(x, y)
-        self.scene.addItem(item)
-        self.scene.clearSelection()
-        item.setSelected(True)
-        if seed_text:
-            item.input_field.setText(seed_text)
-        QTimer.singleShot(0, lambda: (
-            item.input_field.setFocus(),
-            item.input_field.setCursorPosition(len(item.input_field.text()))
-        ))
-        return item
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

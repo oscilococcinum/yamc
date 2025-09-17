@@ -1,5 +1,8 @@
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+import numpy as np
+from sympy import Symbol
 
 
 class plotWidget(FigureCanvasQTAgg):
