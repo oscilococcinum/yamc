@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QCursor
 from PySide6.QtCore import Qt, QTimer
+from solve import Evaluate
 from items import *
 import sys
 
@@ -30,51 +31,21 @@ class View(QGraphicsView):
                 scene_pos = self.mapToScene(self.viewport().rect().center())
             x = scene_pos.x()
             y = scene_pos.y()
-
-
             item = ExpressionItem(x, y)
             scene.addItem(item)
-
             scene.clearSelection()
             item.setSelected(True)
-
-            item.input_field.setText(text)
+            item.inputField.setText(text)
             QTimer.singleShot(0, lambda: (
-                item.input_field.setFocus(),
-                item.input_field.setCursorPosition(len(text))
+                item.inputField.setFocus(),
+                item.inputField.setCursorPosition(len(text))
             ))
-
-            event.accept()
-            return
-
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_1: # type: ignore
-            global_pos = QCursor.pos()
-            view_pos = self.mapFromGlobal(global_pos)
-            if self.viewport().rect().contains(view_pos):
-                scene_pos = self.mapToScene(view_pos)
-            else:
-                scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x()
-            y = scene_pos.y()
-
-            item = IntegrationItem(x, y)
-            scene.addItem(item)
-
-            scene.clearSelection()
-            item.setSelected(True)
-
-            item.input_field.setText(text)
-            QTimer.singleShot(0, lambda: (
-                item.input_field.setFocus(),
-                item.input_field.setCursorPosition(len(text))
-            ))
-
             event.accept()
             return
         
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal: # type: ignore
-            for item in ExpressionItem.instance_list:
-                item.recalculate_all()
+            for item in ExpressionItem.instanceList:
+                item.recalculateAll()
             event.accept()
             return
 
@@ -87,45 +58,45 @@ class View(QGraphicsView):
                 filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
             )
             with open(file_path, 'w') as file:
-                for item in ExpressionItem.instance_list:
-                    file.write(f'{item.save_file()}\n')
+                for item in ExpressionItem.instanceList:
+                    file.write(f'{item.saveFile()}\n')
             event.accept()
             return
 
-        #TODO Add full suport for saving integrals and diffs, currntly dosent support saving differentials, and params for ploting
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
-            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem,
-                             "<class 'items.IntegrationItem'>": IntegrationItem,
-                             "<class 'items.DifferentiationItem'>": DifferentiationItem,
-                             "<class 'items.PlotItem'>": PlotItem}
-            
-            file_path, _ = QFileDialog.getOpenFileName(
-                parent=window,
-                caption="Save File",
-                dir="",
-                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
-            )
-
-            with open(file_path, 'r') as file:
-                for line in file:
-                    parts = line.split(';')
-                    cls = objDict[parts[0]]
-                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
-                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
-                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5])
-                    scene.addItem(obj)
-                    obj._debounce.start()
-                    obj.rearrange_item()
-                    obj.insetr_expr()
-            event.accept()
-            return
+#        #TODO Add full suport for saving integrals and diffs, currntly dosent support saving differentials, and params for ploting
+#        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
+#            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem,
+#                             "<class 'items.IntegrationItem'>": IntegrationItem,
+#                             "<class 'items.DifferentiationItem'>": DifferentiationItem,
+#                             "<class 'items.PlotItem'>": PlotItem}
+#            
+#            file_path, _ = QFileDialog.getOpenFileName(
+#                parent=window,
+#                caption="Save File",
+#                dir="",
+#                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
+#            )
+#
+#            with open(file_path, 'r') as file:
+#                for line in file:
+#                    parts = line.split(';')
+#                    cls = objDict[parts[0]]
+#                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
+#                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
+#                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5])
+#                    scene.addItem(obj)
+#                    obj._debounce.start()
+#                    obj.rearrange_item()
+#                    obj.insetr_expr()
+#            event.accept()
+#            return
 
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W: # type: ignore
             item: ExpressionItem
-            for item in ExpressionItem.instance_list[:]:
-                type(item).instance_list.remove(item)
+            for item in ExpressionItem.instanceList[:]:
+                type(item).instanceList.remove(item)
                 try:
-                    type(item).var_dict.pop(item.varName)
+                    Evaluate.varDict.pop(item.varName)
                 except: pass
 
                 scene = item.scene()
@@ -137,66 +108,16 @@ class View(QGraphicsView):
                     del item
             event.accept()
             return
-    
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_2: # type: ignore
-            global_pos = QCursor.pos()
-            view_pos = self.mapFromGlobal(global_pos)
-            if self.viewport().rect().contains(view_pos):
-                scene_pos = self.mapToScene(view_pos)
-            else:
-                scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x()
-            y = scene_pos.y()
-
-            item = DifferentiationItem(x, y)
-            scene.addItem(item)
-
-            scene.clearSelection()
-            item.setSelected(True)
-
-            item.input_field.setText(text)
-            QTimer.singleShot(0, lambda: (
-                item.input_field.setFocus(),
-                item.input_field.setCursorPosition(len(text))
-            ))
-
-            event.accept()
-            return
-
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_3: # type: ignore
-            global_pos = QCursor.pos()
-            view_pos = self.mapFromGlobal(global_pos)
-            if self.viewport().rect().contains(view_pos):
-                scene_pos = self.mapToScene(view_pos)
-            else:
-                scene_pos = self.mapToScene(self.viewport().rect().center())
-            x = scene_pos.x()
-            y = scene_pos.y()
-
-            item = PlotItem(x, y)
-            scene.addItem(item)
-
-            scene.clearSelection()
-            item.setSelected(True)
-
-            item.input_field.setText(text)
-            QTimer.singleShot(0, lambda: (
-                item.input_field.setFocus(),
-                item.input_field.setCursorPosition(len(text))
-            ))
-
-            event.accept()
-            return
         
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key.Key_Period: # type: ignore
             selection: list[ExpressionItem] = scene.selectedItems() #type: ignore
             for i in selection:
-                if i.result_label.isVisible():
-                    i.result_label.hide()
-                    i.result_label.overwrite_visibility(False)
+                if i.resultLabel.isVisible():
+                    i.resultLabel.hide()
+                    i.resultLabel.overwriteVisibility(False)
                 else:
-                    i.result_label.show()
-                    i.result_label.overwrite_visibility(True)
+                    i.resultLabel.show()
+                    i.resultLabel.overwriteVisibility(True)
             event.accept()
             return
         super().keyPressEvent(event)

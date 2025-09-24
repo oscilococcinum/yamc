@@ -1,22 +1,18 @@
 from PySide6.QtWidgets import (
-    QGraphicsSceneContextMenuEvent, QGraphicsSceneHoverEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
-    QLineEdit, QGraphicsProxyWidget, QGraphicsScene, QWidget
+    QGraphicsSceneContextMenuEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
+    QLineEdit, QGraphicsProxyWidget, QGraphicsScene
 )
-from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QFont, Qt
+from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, Qt
 from PySide6.QtCore import QTimer, Signal
-import solve
+from solve import Evaluate
 from ploting import *
-import re
-from numpy import array, linspace
-
-ITEM_W, ITEM_H = 220, 60
 
 class QGraphicsTextLabel(QGraphicsTextItem):
     def __init__(self, text='', parent=None) -> None:
         super().__init__(text, parent)
-        self.visibility_overwriten: bool = False
+        self.visibilityOverwriten: bool = False
 
-    def overwrite_visibility(self, isOverwritten: bool) -> None:
+    def overwriteVisibility(self, isOverwritten: bool) -> None:
         self.visibility_overwriten = isOverwritten
 
 class AutoResizeLineEdit(QLineEdit):
@@ -34,14 +30,14 @@ class AutoResizeLineEdit(QLineEdit):
 
         self.adjustSizeToText()
         self.textChanged.connect(self.adjustSizeToText)
-        self.focused.connect(self.select_parent)
+        self.focused.connect(self.selectParent)
 
     def adjustSizeToText(self):
         fm = QFontMetrics(self.font())
         text_width = fm.horizontalAdvance(self.text())
         self.setFixedWidth(text_width + 10)
 
-    def select_parent(self):
+    def selectParent(self):
         if self.gparent:
             scene: QGraphicsScene = self.gparent.scene()
             scene.clearSelection()
@@ -55,15 +51,14 @@ class AutoResizeLineEdit(QLineEdit):
         
 
 class ExpressionItem(QGraphicsRectItem):
-    instance_list: list = []
-    var_dict: dict = {}
-
+    instanceList: list = []
     def __init__(self, x, y, expr='', result='', varName='', desc=''):
         super().__init__(0, 0, 220, 30)
-        type(self).instance_list.append(self)
+        type(self).instanceList.append(self)
         self.setPos(x, y)
         self.expr = expr
         self.result = result
+        self.lastVarName = ''
         self.varName = varName
         self.description = desc
 
@@ -71,53 +66,54 @@ class ExpressionItem(QGraphicsRectItem):
         self.setPen(Qt.NoPen) # type: ignore
         self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable) # type: ignore
 
-        self.input_field = AutoResizeLineEdit('', self)
-        self.input_field.setPlaceholderText("Enter expression")
-        self.input_field.setFrame(False)
+        self.inputField = AutoResizeLineEdit('', self)
+        self.inputField.setPlaceholderText("Enter expression")
+        self.inputField.setFrame(False)
 
-        self.result_label = QGraphicsTextLabel("", self)
-        self.result_label.setTextInteractionFlags(Qt.TextSelectableByMouse) # type: ignore
+        self.resultLabel = QGraphicsTextLabel("", self)
+        self.resultLabel.setTextInteractionFlags(Qt.TextSelectableByMouse) # type: ignore
 
-        self.QlineEditProxy = QGraphicsProxyWidget(self)
-        self.QlineEditProxy.setWidget(self.input_field)
-        self.QlineEditProxy.setPos(5, 5)
+        self.inputFieldProxy = QGraphicsProxyWidget(self)
+        self.inputFieldProxy.setWidget(self.inputField)
+        self.inputFieldProxy.setPos(5, 5)
 
-        self.input_field.returnPressed.connect(self.evaluate_expression)
-        self.input_field.textChanged.connect(self.move_result_label)
+        self.inputField.returnPressed.connect(self.evaluateExpression)
+        self.inputField.textChanged.connect(self.moveResultLabel)
 
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
-        self._debounce.timeout.connect(self.evaluate_expression)
-        self.input_field.textChanged.connect(self._on_text_changed)
+        self._debounce.timeout.connect(self.evaluateExpression)
+        self.inputField.textChanged.connect(self._onTextChanged)
         
-    def move_result_label(self):
-        fm = QFontMetrics(self.QlineEditProxy.font())
-        text_width = fm.horizontalAdvance(self.input_field.text())
-        self.result_label.setPos(text_width+8, 2)
+    def moveResultLabel(self):
+        fm = QFontMetrics(self.inputFieldProxy.font())
+        text_width = fm.horizontalAdvance(self.inputField.text())
+        self.resultLabel.setPos(text_width+8, 2)
         self.setRect(0, 0, text_width+10, 30)
 
-    def rearrange_item(self):
-        self.move_result_label()
+    def rearrangeItem(self):
+        self.moveResultLabel()
 
-    def insetr_expr(self):
+    def insetrExpr(self):
         if self.varName:
-            self.input_field.setText(f'{self.varName}={self.expr}')
+            self.inputField.setText(f'{self.varName}={self.expr}')
         else:
-            self.input_field.setText(f'{self.expr}')
+            self.inputField.setText(f'{self.expr}')
 
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
-        menu = self.input_field.createStandardContextMenu()
+        menu = self.inputField.createStandardContextMenu()
         menu.addSeparator()
-        remove_action = menu.addAction("Delete Item")
+        removeAction = menu.addAction("Delete Item")
         chosen = menu.exec(event.screenPos())
-        if chosen == remove_action:
+        if chosen == removeAction:
             try:
-                if hasattr(self, "QlineEditProxy"):
-                    type(self).instance_list.remove(self)
-                    type(self).var_dict.pop(self.varName)
-                    self.QlineEditProxy.setWidget(None) # type: ignore
-                    self.QlineEditProxy.widget().deleteLater()
+                if hasattr(self, "inputFieldProxy"):
+                    type(self).instanceList.remove(self)
+                    Evaluate.varDict.pop(self.varName)
+
+                    self.inputFieldProxy.setWidget(None) # type: ignore
+                    self.inputFieldProxy.widget().deleteLater()
             except Exception:
                 pass
 
@@ -128,259 +124,57 @@ class ExpressionItem(QGraphicsRectItem):
 
         return super().contextMenuEvent(event)
 
-    def _on_text_changed(self, _):
+    def _onTextChanged(self, _):
         self._debounce.start()
 
-    def evaluate_expression(self):
-        expr_str = self.input_field.text().strip()
+    def evaluateExpression(self):
+        expr_str = self.inputField.text().strip()
         if not expr_str:
-            self.result_label.setPlainText("")
+            self.resultLabel.setPlainText("")
             return
         try:
-            if re.search(r'=', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict)
-                type(self).var_dict[self.varName] = self.result
-            elif re.search(r'=.*#', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict)
-                self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
-                type(self).var_dict[self.varName] = self.result
-            else:
-                self.expr = expr_str.strip()
-                self.result = solve.generalEval(expr_str, type(self).var_dict)
-            self.result_label.setPlainText(f"= {self.result}")
+            self.expr = expr_str.strip()
+            evaluator = Evaluate(self.expr)
+            self.result = evaluator.result
+            self.varName = evaluator.varName
+            self.itemType = evaluator.type
+            self.resultLabel.setPlainText(f"= {self.result}")
+            if evaluator.type == 'plotting2D':
+                self.setup2DPlotter(evaluator)
+            elif evaluator.type == 'plotting3D':
+                self.setup3DPlotter(evaluator)
         except Exception as e:
-            self.result_label.setPlainText(f"Error: {str(e)}")
-    
-    def recalculate_all(self):
-        self.evaluate_expression()
+            self.resultLabel.setPlainText(f"Error: {str(e)}")
 
-    def save_file(self) -> str:
+    def saveFile(self) -> str:
         stream = f'{type(self)};{self.pos()};{self.expr};{self.result};{self.varName};{self.description}'
         stream = stream.replace('\n', '')
         return stream
 
-class IntegrationItem(ExpressionItem):
-    def __init__(self, x, y, expr='', result='', varName='', desc=''):
-        super().__init__(x, y, expr, result, varName, desc)
-        self.setPos(x, y)
+    def varNameExists(self):
+        pass
 
-        self.QlineEditProxy.setPos(10, 7)
-
-        self.differential = AutoResizeLineEdit('dx', self)
-        self.DifferentialQlineEditProxy = QGraphicsProxyWidget(self)
-        self.DifferentialQlineEditProxy.setWidget(self.differential)
-        self.DifferentialQlineEditProxy.setPos(15, 7)
-
-        self.integralSign = QGraphicsTextItem("∫", self)
-        self.integralSign.setPos(-3, -2)
-        self.integralSign.setFont(QFont('DejaVuSans', 15))
-
-        self.input_field.textChanged.connect(self.move_differential)
-        self.differential.textChanged.connect(self.move_differential)
-        self.input_field.textChanged.connect(self.move_result_label)
-        self.differential.textChanged.connect(self.move_result_label)
-        self.differential.textChanged.connect(self._on_text_changed)
-
-    def move_differential(self):
-        fm = QFontMetrics(self.QlineEditProxy.font())
-        text_width = fm.horizontalAdvance(self.input_field.text())
-        self.DifferentialQlineEditProxy.setPos(text_width+10, 7)
-        fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
-        diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.setRect(0, 0, text_width+diff_text_width+14, 30)
-
-    def move_result_label(self):
-        fm = QFontMetrics(self.QlineEditProxy.font())
-        text_width = fm.horizontalAdvance(self.input_field.text())
-        fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
-        diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.result_label.setPos(text_width+diff_text_width+10, 4)
-        self.setRect(0, 0, text_width+diff_text_width+14, 30)
-
-    def rearrange_item(self):
-        self.move_result_label()
-        self.move_differential()
-
-    def evaluate_expression(self):
-        expr_str = self.input_field.text().strip()
-        if not expr_str:
-            self.result_label.setPlainText("")
-            return
-        try:
-            if re.search(r'=', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', array([self.differential.text()]))
-                type(self).var_dict[self.varName] = self.result
-            elif re.search(r'=.*#', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'integration', array([self.differential.text()]))
-                self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
-                type(self).var_dict[self.varName] = self.result
-            else:
-                self.expr = expr_str.strip()
-                self.result = solve.generalEval(expr_str, type(self).var_dict, 'integration', array([self.differential.text()]))
-            self.result_label.setPlainText(f"= {self.result}")
-        except Exception as e:
-            self.result_label.setPlainText(f"Error: {str(e)}")
-
-class DifferentiationItem(ExpressionItem):
-    def __init__(self, x, y, expr='', result='', varName='', desc=''):
-        super().__init__(x, y, expr, result, varName, desc)
-        self.setPos(x, y)
-        self.setRect(0, 0, 20, 30)
-
-        self.QlineEditProxy.setPos(15, 7)
-
-        self.differential = AutoResizeLineEdit('dx', self)
-        self.differential.setFont(QFont('DejaVu Sans', 8))
-        self.DifferentialQlineEditProxy = QGraphicsProxyWidget(self)
-        self.DifferentialQlineEditProxy.setWidget(self.differential)
-        self.DifferentialQlineEditProxy.setPos(0, 10)
-
-        self.integralSign = QGraphicsTextItem("d", self)
-        self.integralSign.setPos(0, 0)
-        self.integralSign.setFont(QFont('DejaVu Sans', 8))
-
-        self.input_field.textChanged.connect(self.move_result_label)
-        self.differential.textChanged.connect(self.move_result_label)
-        self.differential.textChanged.connect(self.move_input_field)
-        self.differential.textChanged.connect(self._on_text_changed)
-
-    def move_result_label(self):
-        fm = QFontMetrics(self.QlineEditProxy.font())
-        text_width = fm.horizontalAdvance(self.input_field.text())
-        fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
-        diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.result_label.setPos(text_width+diff_text_width+5, 4)
-        self.setRect(0, 0, text_width+diff_text_width+9, 30)
-
-    def move_input_field(self):
-        fm = QFontMetrics(self.QlineEditProxy.font())
-        text_width = fm.horizontalAdvance(self.input_field.text())
-        fm01 = QFontMetrics(self.DifferentialQlineEditProxy.font())
-        diff_text_width = fm01.horizontalAdvance(self.differential.text())
-        self.QlineEditProxy.setPos(diff_text_width+5, 4)
-        self.setRect(0, 0, text_width+diff_text_width+9, 30)
-
-    def rearrange_item(self):
-        self.move_result_label()
-        self.move_input_field()
-
-    def evaluate_expression(self):
-        expr_str = self.input_field.text().strip()
-        if not expr_str:
-            self.result_label.setPlainText("")
-            return
-        try:
-            if re.search(r'=', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', array([self.differential.text()]))
-                type(self).var_dict[self.varName] = self.result
-            elif re.search(r'=.*#', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'differentiation', array([self.differential.text()]))
-                self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
-                type(self).var_dict[self.varName] = self.result
-            else:
-                self.expr = expr_str.strip()
-                self.result = solve.generalEval(expr_str, type(self).var_dict, 'differentiation', array([self.differential.text()]))
-            self.result_label.setPlainText(f"= {self.result}")
-        except Exception as e:
-            self.result_label.setPlainText(f"Error: {str(e)}")
-
-class PlotItem(ExpressionItem):
-    def __init__(self, x, y, expr='', result='', varName='', desc=''):
-        super().__init__(x, y, expr, result, varName, desc)
-        self.setPos(x, y)
-
-        self.result_label.setVisible(False)
-
+    def setup2DPlotter(self, evaluator: Evaluate) -> None:
         self.plot = plotWidget(self)
         self.PlotProxy = QGraphicsProxyWidget(self)
         self.PlotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
-
-        self.plot_parameters = AutoResizeLineEdit("[-10, 10, 100]", self)
-        self.PlotParametersProxy = QGraphicsProxyWidget(self)
-        self.PlotParametersProxy.setWidget(self.plot_parameters)
-        self.PlotParametersProxy.setPos(300, 5)
-
-        self.params = eval(self.plot_parameters.displayText())
-        self.xmin: float=self.params[0]
-        self.xmax: float=self.params[1]
-        self.sampling: int=self.params[2]
-        self.domian = linspace(self.xmin, self.xmax, self.sampling)
-
-        self.input_field.textChanged.connect(self.move_result_label)
-        self.plot_parameters.textChanged.connect(self.update_params)
-        self._debounce.timeout.connect(self.plot_expression)
-
-    def evaluate_expression(self):
-        expr_str = self.input_field.text().strip()
-        if not expr_str:
-            self.result_label.setPlainText("")
-            return
-        try:
-            if re.search(r'=', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'ploting', self.domian)
-                type(self).var_dict[self.varName] = self.result
-            elif re.search(r'=.*#', expr_str):
-                if not self.result_label.visibility_overwriten:
-                    self.result_label.hide()
-                self.varName = expr_str.split('=')[0].strip()
-                self.expr = expr_str.split('=')[1].strip().split('#')[0].strip()
-                self.result = solve.generalEval(self.expr, type(self).var_dict, 'ploting', self.domian)
-                self.description = expr_str.split('=')[1].strip().split('#')[1].strip()
-                type(self).var_dict[self.varName] = self.result
-            else:
-                self.expr = expr_str.strip()
-                self.result = solve.generalEval(expr_str, type(self).var_dict, 'ploting', self.domian)
-            self.result_label.setPlainText(f"= {self.result}")
-        except Exception as e:
-            self.result_label.setPlainText(f"Error: {str(e)}")
-
-    def plot_expression(self):
         self.plot.axes.cla()
-        self.plot.axes.plot(self.domian, self.result)
-        self.plot.axes.set_xlim(self.xmin, self.xmax)
+        self.plot.axes.plot(evaluator.additionalData['X'], evaluator.result)
+#        self.plot.axes.set_xlim(self.xmin, self.xmax)
         self.plot.draw_idle()
         self.PlotProxy.setWidget(self.plot)
         self.PlotProxy.setPos(-60, -17)
 
-    def update_params(self):
-        self.params = eval(self.plot_parameters.displayText())
-        self.xmin: float=self.params[0]
-        self.xmax: float=self.params[1]
-        self.sampling: int=self.params[2]
-        self.domian = linspace(self.xmin, self.xmax, self.sampling)
+    def setup3DPlotter(self, evaluator: Evaluate) -> None:
+        self.PlotProxy = QGraphicsProxyWidget(self)
+        self.PlotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
+        self.plot = plotWidget(self, plotType=evaluator.type)
+        self.plot.axes.cla()
+        self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.result) #type: ignore
+#        self.plot.axes.set_xlim(self.xmin, self.xmax)
+        self.plot.draw_idle()
+        self.PlotProxy.setWidget(self.plot)
+        self.PlotProxy.setPos(-60, -17)
 
-    def recalculate_all(self):
-        self.evaluate_expression()
-        self.update_params()
-        self.plot_expression()
-
-    def rearrange_item(self):
-        pass
+    def recalculateAll(self):
+        self.evaluateExpression()
