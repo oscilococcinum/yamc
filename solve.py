@@ -3,7 +3,6 @@ from sympy import sympify, lambdify, solve, simplify, N, integrate, diff, latex,
 from sympy.physics.units.systems.si import SI
 from sympy.physics.units import Quantity, convert_to, meter, kilogram, second, ampere, kelvin, mol, candela, newton, pascal
 import re
-import matplotlib.pyplot as plt 
 
 
 SI_UNITS: list = ["m", "kg", "s", "A", "K", "mol", "cd"]
@@ -11,13 +10,12 @@ SI_EXTENDED: dict = {'kg*m*s**-1':"N"}
 FUNCTIONS: list[str] = ['log', 'sin', 'cos', 'sinh', 'cosh', 'tan', 'tanh', 'asin', 'acos', 'asinh', 'acosh', 'ln', 'sqrt']
 
 def get_symbols(eq) -> list[str]:
-    eq = insert_multiplication(eq)
     return re.findall(r'[a-zA-Z]+', eq)
 
-def insert_multiplication(eq: str) -> str:
-    if isinstance(eq, tuple):
-        eq = eq[0]
-    return re.sub(r'(\d)([a-zA-Z])', r'\1*\2', eq)
+#def insert_multiplication(eq: str) -> str:
+#    if isinstance(eq, tuple):
+#        eq = eq[0]
+#    return re.sub(r'(\d)([a-zA-Z])', r'\1*\2', eq)
 
 def insert_par_before_div(eq: str) -> str:
     return re.sub(r'(\/)(.*$)', r'\1(\2)', eq)
@@ -89,7 +87,6 @@ class Evaluate():
         for i in syms:
             if i in varDict.keys() and i not in FUNCTIONS:
                 eq = eq.replace(i, f'({str(varDict[i])})')
-        eq = insert_multiplication(eq)
         syms02 = get_symbols(eq)
         for i in syms02:
             if i not in FUNCTIONS:
@@ -121,7 +118,6 @@ class Evaluate():
         for i in syms:
             if i in varDict.keys() and i not in FUNCTIONS:
                 eq = eq.replace(i, f'({str(varDict[i])})')
-        eq = insert_multiplication(eq)
         syms02 = get_symbols(eq)
         for i in syms02:
             if i not in FUNCTIONS:
@@ -147,7 +143,6 @@ class Evaluate():
         for i in syms:
             if i in varDict.keys() and i not in FUNCTIONS:
                 eq = eq.replace(i, f'({str(varDict[i])})')
-        eq = insert_multiplication(eq)
         syms02 = get_symbols(eq)
         for i in syms02:
             if i not in FUNCTIONS:
@@ -166,7 +161,6 @@ class Evaluate():
         for i in syms:
             if i in varDict.keys() and i not in FUNCTIONS:
                 eq = eq.replace(i, f'({str(varDict[i])})')
-        eq = insert_multiplication(eq)
         syms02 = get_symbols(eq)
         for i in syms02:
             if i not in FUNCTIONS:
@@ -185,7 +179,6 @@ class Evaluate():
         for i in syms:
             if i in varDict.keys() and i not in FUNCTIONS:
                 eq = eq.replace(i, f'({str(varDict[i])})')
-        eq = insert_multiplication(eq)
         syms02 = get_symbols(eq)
         for i in syms02:
             if i not in FUNCTIONS:
