@@ -25,10 +25,10 @@ class Evaluate():
     varDict: dict = {}
     def __init__(self, input: str = '') -> None:
         self.additionalData: dict = {}
-        self.typeDict: dict = {'plotting3D': [r'^.*=?P3D\((.*)\)\((.*)\)$', self.plotter3d],
-                      'plotting2D': [r'^.*=?P\((.*)\)\((.*)\)$', self.plotter2d],
-                      'differtiation': [r'^.*=?D\((.*)\)\((.*)\)$', self.differtiator],
-                      'integration': [r'^.*=?I\((.*)\)\((.*)\)$', self.integrator],
+        self.typeDict: dict = {'plotting3D': [r'^.*=?3d\((.*)\)\((.*)\)$', self.plotter3d],
+                      'plotting2D': [r'^.*=?2d\((.*)\)\((.*)\)$', self.plotter2d],
+                      'differtiation': [r'^.*=?diff\((.*)\)\((.*)\)$', self.differtiator],
+                      'integration': [r'^.*=?int\((.*)\)\((.*)\)$', self.integrator],
                       'evaluation': [r'.*', self.evaluator]}
         self.input: str = input
         self.definition: bool = self.isDefinition()

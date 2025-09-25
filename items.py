@@ -6,6 +6,7 @@ from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, Qt
 from PySide6.QtCore import QTimer, Signal
 from solve import Evaluate
 from ploting import *
+from matplotlib import cm
 
 class QGraphicsTextLabel(QGraphicsTextItem):
     def __init__(self, text='', parent=None) -> None:
@@ -80,6 +81,10 @@ class ExpressionItem(QGraphicsRectItem):
         self.inputField.returnPressed.connect(self.evaluateExpression)
         self.inputField.textChanged.connect(self.moveResultLabel)
 
+        self.plot: (QGraphicsProxyWidget | None) = None
+        self.plotProxy = QGraphicsProxyWidget(self)
+        self.plotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
+
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
@@ -140,9 +145,22 @@ class ExpressionItem(QGraphicsRectItem):
             self.itemType = evaluator.type
             self.resultLabel.setPlainText(f"= {self.result}")
             if evaluator.type == 'plotting2D':
+                if self.plotProxy.isVisible():
+                    self.plotProxy.hide()
                 self.setup2DPlotter(evaluator)
+                self.resultLabel.hide()
+                self.resultLabel.overwriteVisibility(True)
             elif evaluator.type == 'plotting3D':
+                if self.plotProxy.isVisible():
+                    self.plotProxy.hide()
                 self.setup3DPlotter(evaluator)
+                self.resultLabel.hide()
+                self.resultLabel.overwriteVisibility(True)
+            else:
+                if self.plot and self.plotProxy:
+                    self.plotProxy.hide()
+                self.resultLabel.show()
+                self.resultLabel.overwriteVisibility(False)
         except Exception as e:
             self.resultLabel.setPlainText(f"Error: {str(e)}")
 
@@ -155,26 +173,22 @@ class ExpressionItem(QGraphicsRectItem):
         pass
 
     def setup2DPlotter(self, evaluator: Evaluate) -> None:
-        self.plot = plotWidget(self)
-        self.PlotProxy = QGraphicsProxyWidget(self)
-        self.PlotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
-        self.plot.axes.cla()
-        self.plot.axes.plot(evaluator.additionalData['X'], evaluator.result)
-#        self.plot.axes.set_xlim(self.xmin, self.xmax)
-        self.plot.draw_idle()
-        self.PlotProxy.setWidget(self.plot)
-        self.PlotProxy.setPos(-60, -17)
-
-    def setup3DPlotter(self, evaluator: Evaluate) -> None:
-        self.PlotProxy = QGraphicsProxyWidget(self)
-        self.PlotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
+        self.plotProxy.show()
         self.plot = plotWidget(self, plotType=evaluator.type)
         self.plot.axes.cla()
-        self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.result) #type: ignore
-#        self.plot.axes.set_xlim(self.xmin, self.xmax)
+        self.plot.axes.plot(evaluator.additionalData['X'], evaluator.result)
         self.plot.draw_idle()
-        self.PlotProxy.setWidget(self.plot)
-        self.PlotProxy.setPos(-60, -17)
+        self.plotProxy.setWidget(self.plot)
+        self.plotProxy.setPos(-60, -17)
+
+    def setup3DPlotter(self, evaluator: Evaluate) -> None:
+        self.plotProxy.show()
+        self.plot = plotWidget(self, plotType=evaluator.type)
+        self.plot.axes.cla()
+        self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.result, cmap=cm.magma) #type: ignore
+        self.plot.draw_idle()
+        self.plotProxy.setWidget(self.plot)
+        self.plotProxy.setPos(-60, -17)
 
     def recalculateAll(self):
         self.evaluateExpression()
