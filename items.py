@@ -49,7 +49,7 @@ class AutoResizeLineEdit(QLineEdit):
         super().focusInEvent(event)
         self.focused.emit()
 
-        
+
 
 class ExpressionItem(QGraphicsRectItem):
     instanceList: list = []
@@ -62,6 +62,7 @@ class ExpressionItem(QGraphicsRectItem):
         self.lastVarName = ''
         self.varName = varName
         self.description = desc
+        self.plotting = False
 
         self.setBrush(QBrush(QColor(0, 0, 0, 0)))
         self.setPen(Qt.NoPen) # type: ignore
@@ -109,7 +110,10 @@ class ExpressionItem(QGraphicsRectItem):
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         menu = self.inputField.createStandardContextMenu()
         menu.addSeparator()
+
         removeAction = menu.addAction("Delete Item")
+        plotAction = menu.addAction("Plot")
+
         chosen = menu.exec(event.screenPos())
         if chosen == removeAction:
             try:
@@ -121,9 +125,19 @@ class ExpressionItem(QGraphicsRectItem):
                     self.inputFieldProxy.widget().deleteLater()
             except Exception:
                 pass
-
             scene = self.scene()
             if scene: scene.removeItem(self)
+            event.accept()
+            return
+
+        if chosen == plotAction:
+            try:
+                if self.plotting:
+                    self.plotting = False
+                else:
+                    self.plotting = True
+            except Exception:
+                pass
             event.accept()
             return
 

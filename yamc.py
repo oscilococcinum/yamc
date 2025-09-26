@@ -2,10 +2,10 @@ from PySide6.QtWidgets import (
     QApplication, QGraphicsView, QGraphicsScene,
     QVBoxLayout, QWidget, QFileDialog
 )
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QBrush, QColor
 from PySide6.QtCore import Qt, QTimer
 from solve import Evaluate
-from items import *
+from items import ExpressionItem
 import sys
 
 
@@ -14,10 +14,9 @@ class View(QGraphicsView):
         super().__init__(parent)
         self.setFocusPolicy(Qt.StrongFocus) # type: ignore
         self.setSceneRect(0, 0, 720, 1280)
-    
+
     def keyPressEvent(self, event):
         scene = self.scene()
-
         text = event.text()
         modifiers = event.modifiers()
         has_ctrl_alt_meta = bool(modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))  # type: ignore
@@ -42,7 +41,7 @@ class View(QGraphicsView):
             ))
             event.accept()
             return
-        
+
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal: # type: ignore
             for item in ExpressionItem.instanceList:
                 item.recalculateAll()
@@ -69,7 +68,7 @@ class View(QGraphicsView):
 #                             "<class 'items.IntegrationItem'>": IntegrationItem,
 #                             "<class 'items.DifferentiationItem'>": DifferentiationItem,
 #                             "<class 'items.PlotItem'>": PlotItem}
-#            
+
 #            file_path, _ = QFileDialog.getOpenFileName(
 #                parent=window,
 #                caption="Save File",
@@ -108,7 +107,7 @@ class View(QGraphicsView):
                     del item
             event.accept()
             return
-        
+
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key.Key_Period: # type: ignore
             selection: list[ExpressionItem] = scene.selectedItems() #type: ignore
             for i in selection:
