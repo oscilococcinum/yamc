@@ -1,29 +1,36 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
   outputs =
-    { self, nixpkgs, ... }@inputs:
-    let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-    in
+    { nixpkgs, ... }@inputs:
     {
-      devShells.x86_64-linux.default = pkgs.mkShell {
-        nativeBuildInputs =
-          with pkgs;
-          [
-            python312
-          ]
-          ++ (with python312Packages; [
-            debugpy
-            numpy
-            sympy
-            pyside6
-            matplotlib
-          ]);
-        shellHook = '''';
-      };
+      devShells = builtins.listToAttrs (
+        map (system: {
+          name = system;
+          value =
+            with import nixpkgs {
+              inherit system;
+              config.allowUnfree = true;
+            }; rec {
+              yamc-devshell = pkgs.mkShell {
+                nativeBuildInputs =
+                  with pkgs;
+                  [
+                    python313
+                  ]
+                  ++ (with python313Packages; [
+                    numpy
+                    sympy
+                    pyside6
+                    matplotlib
+                    debugpy
+                  ]);
+              };
+              default = yamc-devshell;
+            };
+        }) [ "x86_64-linux" ]
+      );
     };
 }
