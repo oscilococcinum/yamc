@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QGraphicsSceneContextMenuEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
     QLineEdit, QGraphicsProxyWidget, QGraphicsScene
 )
-from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, Qt
+from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QAction, Qt
 from PySide6.QtCore import QTimer, Signal
 from solve import Evaluate
 from ploting import *
@@ -112,7 +112,13 @@ class ExpressionItem(QGraphicsRectItem):
         menu.addSeparator()
 
         removeAction = menu.addAction("Delete Item")
-        plotAction = menu.addAction("Plot")
+
+        plotAction: QAction = QAction('Plot', checkable=True)
+        menu.addAction(plotAction)
+        if self.plotting:
+            plotAction.setChecked(True)
+        else:
+            plotAction.setChecked(False)
 
         chosen = menu.exec(event.screenPos())
         if chosen == removeAction:
