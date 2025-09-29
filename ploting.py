@@ -3,9 +3,9 @@ from matplotlib.figure import Figure
 
 
 class plotWidget(FigureCanvasQTAgg):
-    def __init__(self, parent=None, width=5, height=4, dpi=100, plotType='plotting2d'):
+    def __init__(self, parent=None, width=5, height=4, dpi=100, plotType: int = 1):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
-        if plotType == 'plotting3D':
+        if plotType == 2:
             self.axes = self.fig.add_subplot(111, projection='3d')
         else:
             self.axes = self.fig.add_subplot(111)

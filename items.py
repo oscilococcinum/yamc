@@ -50,7 +50,6 @@ class AutoResizeLineEdit(QLineEdit):
         self.focused.emit()
 
 
-
 class ExpressionItem(QGraphicsRectItem):
     instanceList: list = []
     def __init__(self, x, y, expr='', result='', varName='', desc=''):
@@ -91,7 +90,7 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce.setInterval(300)  # ms
         self._debounce.timeout.connect(self.evaluateExpression)
         self.inputField.textChanged.connect(self._onTextChanged)
-        
+
     def moveResultLabel(self):
         fm = QFontMetrics(self.inputFieldProxy.font())
         text_width = fm.horizontalAdvance(self.inputField.text())
@@ -159,18 +158,18 @@ class ExpressionItem(QGraphicsRectItem):
             return
         try:
             self.expr = expr_str.strip()
-            evaluator = Evaluate(self.expr)
+            evaluator = Evaluate(self.expr, self.plotting)
             self.result = evaluator.result
             self.varName = evaluator.varName
             self.itemType = evaluator.type
             self.resultLabel.setPlainText(f"= {self.result}")
-            if evaluator.type == 'plotting2D':
+            if self.plotting and evaluator.unsingedSymbols == 1:
                 if self.plotProxy.isVisible():
                     self.plotProxy.hide()
                 self.setup2DPlotter(evaluator)
                 self.resultLabel.hide()
                 self.resultLabel.overwriteVisibility(True)
-            elif evaluator.type == 'plotting3D':
+            elif self.plotting and evaluator.unsingedSymbols == 2:
                 if self.plotProxy.isVisible():
                     self.plotProxy.hide()
                 self.setup3DPlotter(evaluator)
@@ -194,18 +193,18 @@ class ExpressionItem(QGraphicsRectItem):
 
     def setup2DPlotter(self, evaluator: Evaluate) -> None:
         self.plotProxy.show()
-        self.plot = plotWidget(self, plotType=evaluator.type)
+        self.plot = plotWidget(self, plotType=evaluator.unsingedSymbols)
         self.plot.axes.cla()
-        self.plot.axes.plot(evaluator.additionalData['X'], evaluator.result)
+        self.plot.axes.plot(evaluator.additionalData['X'], evaluator.additionalData['plotResult'])
         self.plot.draw_idle()
         self.plotProxy.setWidget(self.plot)
         self.plotProxy.setPos(-60, -17)
 
     def setup3DPlotter(self, evaluator: Evaluate) -> None:
         self.plotProxy.show()
-        self.plot = plotWidget(self, plotType=evaluator.type)
+        self.plot = plotWidget(self, plotType=evaluator.unsingedSymbols)
         self.plot.axes.cla()
-        self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.result, cmap=cm.magma) #type: ignore
+        self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.additionalData['plotResult'], cmap=cm.magma) #type: ignore
         self.plot.draw_idle()
         self.plotProxy.setWidget(self.plot)
         self.plotProxy.setPos(-60, -17)
