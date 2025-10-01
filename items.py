@@ -52,16 +52,16 @@ class AutoResizeLineEdit(QLineEdit):
 
 class ExpressionItem(QGraphicsRectItem):
     instanceList: list = []
-    def __init__(self, x, y, expr='', result='', varName='', desc=''):
+    def __init__(self, x, y, expr='', result='', lastVarName='', varName='', desc='', plotting=False):
         super().__init__(0, 0, 220, 30)
         type(self).instanceList.append(self)
         self.setPos(x, y)
-        self.expr = expr
-        self.result = result
-        self.lastVarName = ''
-        self.varName = varName
-        self.description = desc
-        self.plotting = False
+        self.expr: str = expr
+        self.result: str = result
+        self.lastVarName: str = ''
+        self.varName: str = varName
+        self.description: str = desc
+        self.plotting: bool = plotting
 
         self.setBrush(QBrush(QColor(0, 0, 0, 0)))
         self.setPen(Qt.NoPen) # type: ignore
@@ -184,7 +184,11 @@ class ExpressionItem(QGraphicsRectItem):
             self.resultLabel.setPlainText(f"Error: {str(e)}")
 
     def saveFile(self) -> str:
-        stream = f'{type(self)};{self.pos()};{self.expr};{self.result};{self.varName};{self.description}'
+        if self.plotting:
+            plt = "+"
+        else:
+            plt = ''
+        stream = f'{type(self)};{self.pos()};{self.expr};{self.result};{self.lastVarName};{self.varName};{self.description};{plt}'
         stream = stream.replace('\n', '')
         return stream
 
@@ -211,3 +215,9 @@ class ExpressionItem(QGraphicsRectItem):
 
     def recalculateAll(self):
         self.evaluateExpression()
+    
+    def insetrExpr(self):
+        if self.varName != 'None':
+            self.inputField.setText(f'{self.varName}={self.expr}')
+        else:
+            self.inputField.setText(f'{self.expr}')

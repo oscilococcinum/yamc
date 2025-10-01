@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt, QTimer
 from solve import Evaluate
 from items import ExpressionItem
 import sys
+import re
 
 
 class View(QGraphicsView):
@@ -62,33 +63,31 @@ class View(QGraphicsView):
             event.accept()
             return
 
-#        #TODO Add full suport for saving integrals and diffs, currntly dosent support saving differentials, and params for ploting
-#        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
-#            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem,
-#                             "<class 'items.IntegrationItem'>": IntegrationItem,
-#                             "<class 'items.DifferentiationItem'>": DifferentiationItem,
-#                             "<class 'items.PlotItem'>": PlotItem}
+        #TODO Add full suport for saving integrals and diffs, currntly dosent support saving differentials, and params for ploting
+        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
+            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem}
 
-#            file_path, _ = QFileDialog.getOpenFileName(
-#                parent=window,
-#                caption="Save File",
-#                dir="",
-#                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
-#            )
-#
-#            with open(file_path, 'r') as file:
-#                for line in file:
-#                    parts = line.split(';')
-#                    cls = objDict[parts[0]]
-#                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
-#                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
-#                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5])
-#                    scene.addItem(obj)
-#                    obj._debounce.start()
-#                    obj.rearrange_item()
-#                    obj.insetr_expr()
-#            event.accept()
-#            return
+            file_path, _ = QFileDialog.getOpenFileName(
+                parent=window,
+                caption="Save File",
+                dir="",
+                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
+            )
+
+            with open(file_path, 'r') as file:
+                for line in file:
+                    parts = line.split(';')
+                    parts = [x.replace('\n', '') for x in parts]
+                    cls = objDict[parts[0]]
+                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
+                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
+                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5] ,parts[6] ,bool(parts[7]) )
+                    scene.addItem(obj)
+                    obj._debounce.start()
+                    obj.rearrangeItem()
+                    obj.insetrExpr()
+            event.accept()
+            return
 
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W: # type: ignore
             item: ExpressionItem

@@ -22,7 +22,7 @@ FUNCTIONS: list[str] = ['log', 'sin', 'cos', 'sinh', 'cosh', 'tan', 'tanh',
                         'asin', 'acos', 'asinh', 'acosh', 'ln', 'sqrt']
 DIFF_REGEX: str = r'^.*=?diff\((.*)\)\((.*)\)$'
 INT_REGEX: str = r'^.*=?int\((.*)\)\((.*)\)$'
-EVAL_REGEX: str = r'([^,]*)\|(.*)$'
+EVAL_REGEX: str = r'([^|]*)\|?(.*)?$'
 
 def getUnsignedSymbols(eq) -> list[str]:
     res: list = re.findall(r'[a-zA-Z]+', eq)
