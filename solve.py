@@ -126,21 +126,15 @@ class Evaluate():
     def getParametrs(self) -> (list | None):
         if self.isDefinition():
             eq: str = re.split(r'=', self.input)[1]
-            match self.type:
-                case 'differtiation':
-                    res: (tuple | str) = re.findall(DIFF_REGEX, eq)[0]
-                case 'integration':
-                    res: (tuple | str) = re.findall(INT_REGEX, eq)[0]
-                case _: # evaluation
-                    res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
         else:
-            match self.type:
-                case 'differtiation':
-                    res: (tuple | str) = re.findall(DIFF_REGEX, self.input)[0]
-                case 'integration':
-                    res: (tuple | str) = re.findall(INT_REGEX, self.input)[0]
-                case _: # evaluation
-                    res: (tuple | str) = re.findall(EVAL_REGEX, self.input)[0]
+            eq = self.input
+        match self.type:
+            case 'differtiation':
+                res: (tuple | str) = re.findall(DIFF_REGEX, eq)[0]
+            case 'integration':
+                res: (tuple | str) = re.findall(INT_REGEX, eq)[0]
+            case _: # evaluation
+                res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
         if isinstance(res, tuple) and res[1]:
             params: str = res[1]
             resList = params.split(',')
