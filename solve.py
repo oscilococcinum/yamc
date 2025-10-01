@@ -24,6 +24,12 @@ DIFF_REGEX: str = r'^.*=?diff\((.*)\)\((.*)\)$'
 INT_REGEX: str = r'^.*=?int\((.*)\)\((.*)\)$'
 EVAL_REGEX: str = r'.*'
 
+def getUnsignedSymbols(eq) -> list[str]:
+    res: list = re.findall(r'[a-zA-Z]+', eq)
+    res = list(set(res))
+    res = [x for x in res if x not in FUNCTIONS]
+    return res
+
 def getSymbols(eq) -> list[str]:
     return re.findall(r'[a-zA-Z]+', eq)
 
@@ -44,7 +50,7 @@ class Evaluate():
         self.parameters: (list | None) = self.getParametrs()
         self.varName: (str | None) = self.getVarName()
         self.result: str = self.solve()
-        self.unsingedSymbols: int = len(getSymbols(self.result))
+        self.unsingedSymbols: int = len(getUnsignedSymbols(self.result))
         self.plotting = plotting
         if plotting:
             self.evalPlotData()
