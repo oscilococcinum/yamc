@@ -22,7 +22,7 @@ FUNCTIONS: list[str] = ['log', 'sin', 'cos', 'sinh', 'cosh', 'tan', 'tanh',
                         'asin', 'acos', 'asinh', 'acosh', 'ln', 'sqrt']
 DIFF_REGEX: str = r'^.*=?diff\((.*)\)\((.*)\)$'
 INT_REGEX: str = r'^.*=?int\((.*)\)\((.*)\)$'
-EVAL_REGEX: str = r'.*'
+EVAL_REGEX: str = r'([^,]*)\|(.*)$'
 
 def getUnsignedSymbols(eq) -> list[str]:
     res: list = re.findall(r'[a-zA-Z]+', eq)
@@ -137,7 +137,7 @@ class Evaluate():
                 res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
         if isinstance(res, tuple) and res[1]:
             params: str = res[1]
-            resList = params.split(',')
+            resList = params.split(' ')
             resList = [float(x) for x in resList]
             return resList
         else:
