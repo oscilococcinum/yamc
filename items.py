@@ -3,7 +3,8 @@ from PySide6.QtWidgets import (
     QLineEdit, QGraphicsProxyWidget, QGraphicsScene
 )
 from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QAction, Qt
-from PySide6.QtCore import QTimer, Signal
+from PySide6.QtCore import QTimer, QSizeF, Signal
+from latex import LatexWidget
 from solve import Evaluate
 from ploting import *
 from matplotlib import cm
@@ -52,7 +53,7 @@ class AutoResizeLineEdit(QLineEdit):
 
 class ExpressionItem(QGraphicsRectItem):
     instanceList: list = []
-    def __init__(self, x, y, expr='', result='', lastVarName='', varName='', desc='', plotting=False):
+    def __init__(self, x, y, expr='', result='', lastVarName='', varName='', desc='', plotting=False, latexResult=False):
         super().__init__(0, 0, 220, 30)
         type(self).instanceList.append(self)
         self.setPos(x, y)
@@ -62,6 +63,8 @@ class ExpressionItem(QGraphicsRectItem):
         self.varName: str = varName
         self.description: str = desc
         self.plotting: bool = plotting
+        self.latexResult: bool = latexResult
+        self.evaluator = Evaluate()
 
         self.setBrush(QBrush(QColor(0, 0, 0, 0)))
         self.setPen(Qt.NoPen) # type: ignore
@@ -85,11 +88,28 @@ class ExpressionItem(QGraphicsRectItem):
         self.plotProxy = QGraphicsProxyWidget(self)
         self.plotProxy.setFlags(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
 
+        self.latex: LatexWidget = LatexWidget()
+        self.latexProxy: QGraphicsProxyWidget = QGraphicsProxyWidget(self)
+        if not latexResult:
+            self.latexProxy.hide()
+            self.latex.hide()
+        self.latexProxy.setWidget(self.latex)
+
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
+        if self.plotting:
+            self._debounce.timeout.connect(self.setupPlotter(self.evaluator))
         self._debounce.timeout.connect(self.evaluateExpression)
+        self._debounce.timeout.connect(self.updateLatexSize)
+        self._debounce.timeout.connect(self.updateLatexPos)
         self.inputField.textChanged.connect(self._onTextChanged)
+    
+    def updateLatexSize(self):
+        self.latex.adjustSize()
+
+    def updateLatexPos(self):
+        self.latexProxy.setPos(self.resultLabel.x(), self.resultLabel.y())
 
     def moveResultLabel(self):
         fm = QFontMetrics(self.inputFieldProxy.font())
@@ -119,6 +139,13 @@ class ExpressionItem(QGraphicsRectItem):
         else:
             plotAction.setChecked(False)
 
+        latexAction: QAction = QAction('Latex', checkable=True)
+        menu.addAction(latexAction)
+        if self.latexResult:
+            latexAction.setChecked(True)
+        else:
+            latexAction.setChecked(False)
+
         chosen = menu.exec(event.screenPos())
         if chosen == removeAction:
             try:
@@ -135,12 +162,37 @@ class ExpressionItem(QGraphicsRectItem):
             event.accept()
             return
 
-        if chosen == plotAction:
+        elif chosen == plotAction:
             try:
                 if self.plotting:
                     self.plotting = False
+                    if self.plot and self.plotProxy:
+                        self.plotProxy.hide()
+                    self.resultLabel.show()
+                    self.resultLabel.overwriteVisibility(False)
                 else:
                     self.plotting = True
+                    if self.evaluator.getUnsingedSymsCount() == 1:
+                        if self.plotProxy.isVisible():
+                            self.plotProxy.hide()
+                        self.setupPlotter(self.evaluator)
+                        self.resultLabel.hide()
+                        self.resultLabel.overwriteVisibility(True)
+            except Exception:
+                pass
+            event.accept()
+            return
+
+        elif chosen == latexAction:
+            try:
+                if self.latexResult:
+                    self.latexResult = False
+                    self.latexProxy.hide()
+                    self.latex.hide()
+                else:
+                    self.latexResult = True
+                    self.latexProxy.show()
+                    self.latex.show()
             except Exception:
                 pass
             event.accept()
@@ -158,28 +210,13 @@ class ExpressionItem(QGraphicsRectItem):
             return
         try:
             self.expr = expr_str.strip()
-            evaluator = Evaluate(self.expr, self.plotting)
-            self.result = evaluator.result
-            self.varName = evaluator.varName
-            self.itemType = evaluator.type
+            self.evaluator.eval(self.expr)
+            if self.plotting:
+                self.evaluator.evalPlotData()
+            self.result = self.evaluator.getResult()
+            self.varName = self.evaluator.getVarName()
             self.resultLabel.setPlainText(f"= {self.result}")
-            if self.plotting and evaluator.unsingedSymbols == 1:
-                if self.plotProxy.isVisible():
-                    self.plotProxy.hide()
-                self.setup2DPlotter(evaluator)
-                self.resultLabel.hide()
-                self.resultLabel.overwriteVisibility(True)
-            elif self.plotting and evaluator.unsingedSymbols == 2:
-                if self.plotProxy.isVisible():
-                    self.plotProxy.hide()
-                self.setup3DPlotter(evaluator)
-                self.resultLabel.hide()
-                self.resultLabel.overwriteVisibility(True)
-            else:
-                if self.plot and self.plotProxy:
-                    self.plotProxy.hide()
-                self.resultLabel.show()
-                self.resultLabel.overwriteVisibility(False)
+            self.latex.setText(self.evaluator.getLatex()) 
         except Exception as e:
             self.resultLabel.setPlainText(f"Error: {str(e)}")
 
@@ -195,20 +232,15 @@ class ExpressionItem(QGraphicsRectItem):
     def varNameExists(self):
         pass
 
-    def setup2DPlotter(self, evaluator: Evaluate) -> None:
+    def setupPlotter(self, evaluator: Evaluate) -> None:
         self.plotProxy.show()
-        self.plot = plotWidget(self, plotType=evaluator.unsingedSymbols)
+        self.plot = plotWidget(self, plotType=evaluator.getUnsingedSymsCount())
         self.plot.axes.cla()
-        self.plot.axes.plot(evaluator.additionalData['X'], evaluator.additionalData['plotResult'])
-        self.plot.draw_idle()
-        self.plotProxy.setWidget(self.plot)
-        self.plotProxy.setPos(-60, -17)
-
-    def setup3DPlotter(self, evaluator: Evaluate) -> None:
-        self.plotProxy.show()
-        self.plot = plotWidget(self, plotType=evaluator.unsingedSymbols)
-        self.plot.axes.cla()
-        self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.additionalData['plotResult'], cmap=cm.magma) #type: ignore
+        match evaluator.getUnsingedSymsCount():
+            case 1:
+                self.plot.axes.plot(evaluator.additionalData['X'], evaluator.additionalData['plotResult'])
+            case 2:
+                self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.additionalData['plotResult'], cmap=cm.magma) #type: ignore
         self.plot.draw_idle()
         self.plotProxy.setWidget(self.plot)
         self.plotProxy.setPos(-60, -17)

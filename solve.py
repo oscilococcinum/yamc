@@ -18,10 +18,16 @@ import re
 
 SI_UNITS: list = ["m", "kg", "s", "A", "K", "mol", "cd"]
 SI_EXTENDED: dict = {'kg*m*s**-1': "N"}
-FUNCTIONS: list[str] = ['log', 'sin', 'cos', 'sinh', 'cosh', 'tan', 'tanh',
-                        'asin', 'acos', 'asinh', 'acosh', 'ln', 'sqrt']
-DIFF_REGEX: str = r'^.*=?diff\((.*)\)\((.*)\)$'
-INT_REGEX: str = r'^.*=?int\((.*)\)\((.*)\)$'
+FUNCTIONS: dict = { # Math functions
+                    'log':log, 'sin':sin, 'cos':cos, 'sinh':sinh, 'cosh':cosh, 'tan':tan, 'tanh':tanh,
+                    'asin':asin, 'acos':acos, 'asinh':asinh, 'acosh':acosh, 'ln':ln, 'sqrt':sqrt, 'solve':solve,
+                    'D': diff, 'I': integrate,
+                    # Units
+                    'm':meter, 'kg':kilogram,'s':second, 'A':ampere,
+                    'K':kelvin, 'mol':mol, 'cd':candela, 'N':newton, 'Pa':pascal,
+                    # Sympy functions
+                    'convertUnits':convert_to, 'Num':N, 'lt': latex
+                    }
 EVAL_REGEX: str = r'([^|]*)\|?(.*)?$'
 
 def getUnsignedSymbols(eq) -> list[str]:
@@ -31,110 +37,86 @@ def getUnsignedSymbols(eq) -> list[str]:
     return res
 
 def getSymbols(eq) -> list[str]:
-    return re.findall(r'[a-zA-Z]+', eq)
-
-
-def insertParBeforeDiv(eq: str) -> str:
-    return re.sub(r'(\/)(.*$)', r'\1(\2)', eq)
-
+    res: list = re.findall(r'[a-zA-Z]+', eq)
+    return list(set([x for x in res if x not in FUNCTIONS]))
 
 class Evaluate():
     varDict: dict = {}
 
-    def __init__(self, input: str = '', plotting: bool = False) -> None:
+    def __init__(self, input: str = '') -> None:
         self.additionalData: dict = {}
-        self.input: str = input
-        self.definition: bool = self.isDefinition()
-        self.type: str = self.getEqType()
-        self.equation: str = self.getEquation()
-        self.parameters: (list | None) = self.getParametrs()
-        self.varName: (str | None) = self.getVarName()
-        self.result: str = self.solve()
-        self.unsingedSymbols: int = len(getUnsignedSymbols(self.result))
-        self.plotting = plotting
-        if plotting:
-            self.evalPlotData()
+        self._input: str = input
+        self._definition: bool = self._isDefinition()
+        self._equation: str = self._getEquation()
+        self._parameters: (list | None) = self._getParametrs()
+        self._varName: (str | None) = self._getVarName()
+        self._latex: str = ''
+        self._result: str = self._solve()
+        self._unsingedSymbols: int = len(getUnsignedSymbols(self._result))
 
-    def solve(self) -> str:
-        eq = self.equation
+    ### Public
+    def eval(self, input: str):
+        self.__init__(input)
+
+    def evalPlotData(self):
+        self.additionalData['plotResult'] = self._plotter()
+
+    def getResult(self) -> str:
+        return self._result
+
+    def getVarName(self) -> str:
+        return self._varName
+
+    def getLatex(self) -> str:
+        return self._latex
+    
+    def getUnsingedSymsCount(self) -> int:
+        return self._unsingedSymbols
+    
+    ### Internal
+    def _setLatex(self, latex: str):
+        self._latex = latex
+
+    def _solve(self) -> str:
+        eq = self._equation
         syms = getSymbols(eq)
         varDict = type(self).varDict
         for i in syms:
-            if i in varDict.keys() and i not in FUNCTIONS:
+            if i in varDict.keys() and i not in FUNCTIONS.keys():
                 eq = eq.replace(i, f'({str(varDict[i])})')
         syms02 = getSymbols(eq)
         for i in syms02:
-            if i not in FUNCTIONS:
+            if i not in FUNCTIONS.keys():
                 exec(f"{i} = Symbol('{i}')")
-        eq = insertParBeforeDiv(eq)
-        match self.type:
-            case 'differtiation':
-                d_ = sympify('x')
-                equation = diff(sympify(eq), d_)
-                if self.definition and self.varName:
-                    varDict[self.varName] = str(equation)
-                return str(equation)
-            case 'integration':
-                d_ = sympify('x')
-                equation = integrate(sympify(eq), d_)
-                if self.definition and self.varName:
-                    varDict[self.varName] = str(equation)
-                return str(equation)
-            case _: # Evaluation
-                equation = sympify(eq)
-                if self.definition and self.varName:
-                    varDict[self.varName] = str(equation)
-                return str(equation)
+        try:
+            equation = sympify(eq, locals=FUNCTIONS)
+            self._setLatex(latex(equation))
+            if self._definition and self._varName:
+                varDict[self._varName] = str(equation)
+            return str(equation)
+        except Exception as e:
+            return f'Error: {str(e)}'
 
-    def evalPlotData(self):
-        self.additionalData['plotResult'] = self.plotter()
+    def _isDefinition(self) -> bool:
+        return bool(re.findall(r'=', self._input))
 
-    def getEqType(self) -> str:
-        if re.search(DIFF_REGEX, self.input):
-            return 'differtiation'
-        elif re.search(INT_REGEX, self.input):
-            return 'integration'
+    def _getEquation(self) -> str:
+        if self._isDefinition():
+            eq: str = re.split(r'=', self._input)[1]
+            res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
         else:
-            return 'evaluation'
-
-    def isDefinition(self) -> bool:
-        return bool(re.findall(r'=', self.input))
-
-    def getEquation(self) -> str:
-        if self.isDefinition():
-            eq: str = re.split(r'=', self.input)[1]
-            match self.type:
-                case 'differtiation':
-                    res: (tuple | str) = re.findall(DIFF_REGEX, eq)[0]
-                case 'integration':
-                    res: (tuple | str) = re.findall(INT_REGEX, eq)[0]
-                case _: # evaluation
-                    res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
-        else:
-            match self.type:
-                case 'differtiation':
-                    res: (tuple | str) = re.findall(DIFF_REGEX, self.input)[0]
-                case 'integration':
-                    res: (tuple | str) = re.findall(INT_REGEX, self.input)[0]
-                case _: # evaluation
-                    res: (tuple | str) = re.findall(EVAL_REGEX, self.input)[0]
+            res: (tuple | str) = re.findall(EVAL_REGEX, self._input)[0]
         if isinstance(res, tuple):
             return res[0]
         else:
             return res
 
-    def getParametrs(self) -> (list | None):
-        if self.isDefinition():
-            eq: str = re.split(r'=', self.input)[1]
+    def _getParametrs(self) -> (list | None):
+        if self._isDefinition():
+            eq: str = re.split(r'=', self._input)[1]
         else:
-            eq = self.input
-        match self.type:
-            case 'differtiation':
-                res: (tuple | str) = re.findall(DIFF_REGEX, eq)[0]
-            case 'integration':
-                res: (tuple | str) = re.findall(INT_REGEX, eq)[0]
-            case _: # evaluation
-                res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
+            eq = self._input
+        res: (tuple | str) = re.findall(EVAL_REGEX, eq)[0]
         if isinstance(res, tuple) and res[1]:
             params: str = res[1]
             resList = params.split(' ')
@@ -143,14 +125,14 @@ class Evaluate():
         else:
             return None
 
-    def getVarName(self) -> (str | None):
-        if self.isDefinition():
-            return (re.split(r'=', self.input)[0]).strip()
+    def _getVarName(self) -> (str | None):
+        if self._isDefinition():
+            return (re.split(r'=', self._input)[0]).strip()
         else:
             return None
 
-    def plotter(self):
-        eq = self.equation
+    def _plotter(self):
+        eq = self._equation
         syms = getSymbols(eq)
         varDict = type(self).varDict
         for i in syms:
@@ -160,52 +142,40 @@ class Evaluate():
         for i in syms02:
             if i not in FUNCTIONS:
                 exec(f"{i} = Symbol('{i}')")
-        eq = insertParBeforeDiv(eq)
         sympy_equation = simplify(eq)
         args: list = [x for x in list(set(syms02)) if x not in FUNCTIONS]
         numpy_equation = lambdify(args, sympy_equation, 'numpy')
-        match self.unsingedSymbols:
+        match self._unsingedSymbols:
             case 2:
-                if self.parameters:
-                    X, Y = meshgrid(linspace(self.parameters[0],
-                                             self.parameters[1],
-                                             int(self.parameters[2])),
-                                    linspace(self.parameters[0],
-                                             self.parameters[1],
-                                             int(self.parameters[2])))
+                if self._parameters:
+                    X, Y = meshgrid(linspace(self._parameters[0],
+                                             self._parameters[1],
+                                             int(self._parameters[2])),
+                                    linspace(self._parameters[0],
+                                             self._parameters[1],
+                                             int(self._parameters[2])))
                 else:
                     X, Y = meshgrid(linspace(-100, 100, 10), linspace(-100, 100, 10))
                 equation = numpy_equation(X, Y)
-                if self.definition and self.varName:
-                    varDict[self.varName] = str(equation)
+                if self._definition and self._varName:
+                    varDict[self._varName] = str(equation)
                 self.additionalData['X'] = X
                 self.additionalData['Y'] = Y
             case _:
-                if self.parameters:
-                    x = linspace(self.parameters[0],
-                                 self.parameters[1],
-                                 int(self.parameters[2]))
+                if self._parameters:
+                    x = linspace(self._parameters[0],
+                                 self._parameters[1],
+                                 int(self._parameters[2]))
                 else:
                     x = linspace(-100, 100, 10)
                 self.additionalData['X'] = x
                 equation = numpy_equation(x)
-                if self.definition and self.varName:
-                    varDict[self.varName] = str(equation)
+                if self._definition and self._varName:
+                    varDict[self._varName] = str(equation)
         return equation
 
 
-if __name__ == '__main__':
-    eva = Evaluate('2x+8*6x')
-    eva01 = Evaluate('b=2x+8*6x')
-    eva02 = Evaluate('D(2x+8*6x)(x)')
-    eva03 = Evaluate('c=I(2x+8*6x)(x)')
-    eva04 = Evaluate('P(2x+8*6x)(x)')
-    eva05 = Evaluate('P3D(2x+8*6y)(x,y)')
-    eva06 = Evaluate('l=P3D(2x+8*6y)(x,y)')
-    eva07 = Evaluate('y=2x+8*6x')
-    eva08 = Evaluate('t=2x+8*6x')
-    eva09 = Evaluate('t=2sin(x)+8*6cos(x)')
-
-    b = N(simplify('2*x*cos(15)'))
-    res = eva09.result
-    a = 0
+a = Evaluate('2*x+8')
+a.eval('3*x+9')
+res = a.getResult()
+a= 0
