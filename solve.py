@@ -4,14 +4,14 @@ from numpy import (
         meshgrid, e, pi)
 from sympy import (
         sympify, lambdify, solve,
-        simplify, N, integrate, diff, latex,
+        simplify, integrate, diff, latex,
         Symbol, symbols, log, sin, cos, sinh,
         cosh, tan, tanh, asin, acos, asinh,
         acosh, ln, sqrt)
 from sympy.physics.units import (
         Quantity, convert_to, meter, kilogram,
         second, ampere, kelvin, mol, candela,
-        newton, pascal)
+        newton, pascal, m, kg, s, A, K, mole, cd, N, Pa)
 from sympy.physics.units.systems.si import SI
 import re
 
@@ -23,10 +23,10 @@ FUNCTIONS: dict = { # Math functions
                     'asin':asin, 'acos':acos, 'asinh':asinh, 'acosh':acosh, 'ln':ln, 'sqrt':sqrt, 'solve':solve,
                     'D': diff, 'I': integrate,
                     # Units
-                    'm':meter, 'kg':kilogram,'s':second, 'A':ampere,
-                    'K':kelvin, 'mol':mol, 'cd':candela, 'N':newton, 'Pa':pascal,
+                    'm':m, 'kg':kg,'s':s, 'A':A,
+                    'K':K, 'mole':mole, 'cd':cd, 'N':N, 'Pa':Pa,
                     # Sympy functions
-                    'convertUnits':convert_to, 'Num':N, 'lt': latex
+                    'convertUnits':convert_to, 'lt': latex
                     }
 EVAL_REGEX: str = r'([^|]*)\|?(.*)?$'
 
@@ -64,12 +64,12 @@ class Evaluate():
     def getResult(self) -> str:
         return self._result
 
-    def getVarName(self) -> str:
+    def getVarName(self) -> (str | None):
         return self._varName
 
     def getLatex(self) -> str:
         return self._latex
-    
+
     def getUnsingedSymsCount(self) -> int:
         return self._unsingedSymbols
     

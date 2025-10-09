@@ -59,7 +59,7 @@ class ExpressionItem(QGraphicsRectItem):
         self.setPos(x, y)
         self.expr: str = expr
         self.result: str = result
-        self.lastVarName: str = ''
+        self.lastVarName: str = lastVarName
         self.varName: str = varName
         self.description: str = desc
         self.plotting: bool = plotting
@@ -98,13 +98,17 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
-        if self.plotting:
-            self._debounce.timeout.connect(self.setupPlotter(self.evaluator))
         self._debounce.timeout.connect(self.evaluateExpression)
         self._debounce.timeout.connect(self.updateLatexSize)
         self._debounce.timeout.connect(self.updateLatexPos)
+        self._debounce.timeout.connect(self.updatePlot)
         self.inputField.textChanged.connect(self._onTextChanged)
-    
+
+    def updatePlot(self):
+        if self.plotting:
+            self.evaluator.evalPlotData()
+            self.setupPlotter(self.evaluator)
+
     def updateLatexSize(self):
         self.latex.adjustSize()
 
@@ -173,12 +177,10 @@ class ExpressionItem(QGraphicsRectItem):
                     self.resultLabel.overwriteVisibility(False)
                 else:
                     self.plotting = True
-                    if self.evaluator.getUnsingedSymsCount() == 1:
-                        if self.plotProxy.isVisible():
-                            self.plotProxy.hide()
-                        self.setupPlotter(self.evaluator)
-                        self.resultLabel.hide()
-                        self.resultLabel.overwriteVisibility(True)
+                    self.plotProxy.show()
+                    self.updatePlot()
+                    self.resultLabel.hide()
+                    self.resultLabel.overwriteVisibility(True)
             except Exception:
                 pass
             event.accept()
@@ -190,10 +192,14 @@ class ExpressionItem(QGraphicsRectItem):
                     self.latexResult = False
                     self.latexProxy.hide()
                     self.latex.hide()
+                    self.resultLabel.show()
+                    self.resultLabel.overwriteVisibility(False)
                 else:
                     self.latexResult = True
                     self.latexProxy.show()
                     self.latex.show()
+                    self.resultLabel.hide()
+                    self.resultLabel.overwriteVisibility(True)
             except Exception:
                 pass
             event.accept()
@@ -212,8 +218,6 @@ class ExpressionItem(QGraphicsRectItem):
         try:
             self.expr = expr_str.strip()
             self.evaluator.eval(self.expr)
-            if self.plotting:
-                self.evaluator.evalPlotData()
             self.result = self.evaluator.getResult()
             self.varName = self.evaluator.getVarName()
             self.resultLabel.setPlainText(f"= {self.result}")
@@ -249,7 +253,7 @@ class ExpressionItem(QGraphicsRectItem):
     def recalculateAll(self):
         self.evaluateExpression()
     
-    def insetrExpr(self):
+    def insertExpr(self):
         if self.varName != 'None':
             self.inputField.setText(f'{self.varName}={self.expr}')
         else:
