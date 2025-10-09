@@ -109,7 +109,8 @@ class ExpressionItem(QGraphicsRectItem):
         self.latex.adjustSize()
 
     def updateLatexPos(self):
-        self.latexProxy.setPos(self.resultLabel.x(), self.resultLabel.y())
+        h:float = self.latex.size().height()/2
+        self.latexProxy.setPos(self.resultLabel.x(), self.resultLabel.y() - h + 10)
 
     def moveResultLabel(self):
         fm = QFontMetrics(self.inputFieldProxy.font())

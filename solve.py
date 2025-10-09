@@ -90,7 +90,7 @@ class Evaluate():
                 exec(f"{i} = Symbol('{i}')")
         try:
             equation = sympify(eq, locals=FUNCTIONS)
-            self._setLatex(latex(equation))
+            self._setLatex(f'={latex(equation)}')
             if self._definition and self._varName:
                 varDict[self._varName] = str(equation)
             return str(equation)
