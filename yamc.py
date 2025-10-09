@@ -85,7 +85,7 @@ class View(QGraphicsView):
                     scene.addItem(obj)
                     obj._debounce.start()
                     obj.rearrangeItem()
-                    obj.insetrExpr()
+                    obj.insertExpr()
             event.accept()
             return
 

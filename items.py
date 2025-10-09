@@ -125,12 +125,6 @@ class ExpressionItem(QGraphicsRectItem):
     def rearrangeItem(self):
         self.moveResultLabel()
 
-    def insetrExpr(self):
-        if self.varName:
-            self.inputField.setText(f'{self.varName}={self.expr}')
-        else:
-            self.inputField.setText(f'{self.expr}')
-
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         menu = self.inputField.createStandardContextMenu()
         menu.addSeparator()
@@ -252,7 +246,7 @@ class ExpressionItem(QGraphicsRectItem):
 
     def recalculateAll(self):
         self.evaluateExpression()
-    
+
     def insertExpr(self):
         if self.varName != 'None':
             self.inputField.setText(f'{self.varName}={self.expr}')
