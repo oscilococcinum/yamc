@@ -44,7 +44,7 @@ class Evaluate():
     varDict: dict = {}
 
     def __init__(self, input: str = '') -> None:
-        self.additionalData: dict = {}
+        self._additionalData: dict = {}
         self._input: str = input
         self._definition: bool = self._isDefinition()
         self._equation: str = self._getEquation()
@@ -59,7 +59,7 @@ class Evaluate():
         self.__init__(input)
 
     def evalPlotData(self):
-        self.additionalData['plotResult'] = self._plotter()
+        self._additionalData['plotResult'] = self._plotter()
 
     def getResult(self) -> str:
         return self._result
@@ -72,7 +72,10 @@ class Evaluate():
 
     def getUnsingedSymsCount(self) -> int:
         return self._unsingedSymbols
-    
+
+    def getAddData(self, key: str) -> int:
+        return self._additionalData[key]
+
     ### Internal
     def _setLatex(self, latex: str):
         self._latex = latex
@@ -157,10 +160,8 @@ class Evaluate():
                 else:
                     X, Y = meshgrid(linspace(-100, 100, 10), linspace(-100, 100, 10))
                 equation = numpy_equation(X, Y)
-                if self._definition and self._varName:
-                    varDict[self._varName] = str(equation)
-                self.additionalData['X'] = X
-                self.additionalData['Y'] = Y
+                self._additionalData['X'] = X
+                self._additionalData['Y'] = Y
             case _:
                 if self._parameters:
                     x = linspace(self._parameters[0],
@@ -168,14 +169,6 @@ class Evaluate():
                                  int(self._parameters[2]))
                 else:
                     x = linspace(-100, 100, 10)
-                self.additionalData['X'] = x
+                self._additionalData['X'] = x
                 equation = numpy_equation(x)
-                if self._definition and self._varName:
-                    varDict[self._varName] = str(equation)
         return equation
-
-
-a = Evaluate('2*x+8')
-a.eval('3*x+9')
-res = a.getResult()
-a= 0

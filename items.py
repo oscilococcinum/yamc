@@ -237,9 +237,9 @@ class ExpressionItem(QGraphicsRectItem):
         self.plot.axes.cla()
         match evaluator.getUnsingedSymsCount():
             case 1:
-                self.plot.axes.plot(evaluator.additionalData['X'], evaluator.additionalData['plotResult'])
+                self.plot.axes.plot(evaluator.getAddData('X'), evaluator.getAddData('plotResult'))
             case 2:
-                self.plot.axes.plot_surface(evaluator.additionalData['X'], evaluator.additionalData['Y'], evaluator.additionalData['plotResult'], cmap=cm.magma) #type: ignore
+                self.plot.axes.plot_surface(evaluator.getAddData('X'), evaluator.getAddData('Y'), evaluator.getAddData('plotResult'), cmap=cm.magma) #type: ignore
         self.plot.draw_idle()
         self.plotProxy.setWidget(self.plot)
         self.plotProxy.setPos(-60, -17)
