@@ -76,6 +76,10 @@ class Evaluate():
     def getAddData(self, key: str) -> int:
         return self._additionalData[key]
 
+    def popVarName(self, varName: str):
+        if varName:
+            self.varDict.pop(varName)
+
     ### Internal
     def _setLatex(self, latex: str):
         self._latex = latex
