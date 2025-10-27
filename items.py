@@ -98,11 +98,19 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
+        self._debounce.timeout.connect(self.checkVarNames)
         self._debounce.timeout.connect(self.evaluateExpression)
         self._debounce.timeout.connect(self.updateLatexSize)
         self._debounce.timeout.connect(self.updateLatexPos)
         self._debounce.timeout.connect(self.updatePlot)
         self.inputField.textChanged.connect(self._onTextChanged)
+
+    def checkVarNames(self):
+        setVars: list = [inst.varName for inst in self.instanceList]
+        memmoryVars: list = self.evaluator.varDict.keys()
+        diff: list = list(set(setVars).symmetric_difference(set(memmoryVars)))
+        for var in diff:
+            self.evaluator.popVarName(var)
 
     def updatePlot(self):
         if self.plotting:
