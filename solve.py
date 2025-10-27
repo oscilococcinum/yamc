@@ -49,7 +49,7 @@ class Evaluate():
         self._definition: bool = self._isDefinition()
         self._equation: str = self._getEquation()
         self._parameters: (list | None) = self._getParametrs()
-        self._varName: (str | None) = self._getVarName()
+        self._varName: str = self._getVarName()
         self._latex: str = ''
         self._result: str = self._solve()
         self._unsingedSymbols: int = len(getUnsignedSymbols(self._result))
@@ -64,7 +64,7 @@ class Evaluate():
     def getResult(self) -> str:
         return self._result
 
-    def getVarName(self) -> (str | None):
+    def getVarName(self) -> str:
         return self._varName
 
     def getLatex(self) -> str:
@@ -128,11 +128,11 @@ class Evaluate():
         else:
             return None
 
-    def _getVarName(self) -> (str | None):
+    def _getVarName(self) -> str:
         if self._isDefinition():
             return (re.split(r'=', self._input)[0]).strip()
         else:
-            return None
+            return ''
 
     def _plotter(self):
         eq = self._equation
