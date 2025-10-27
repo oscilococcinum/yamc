@@ -253,7 +253,11 @@ class ExpressionItem(QGraphicsRectItem):
         self.plotProxy.setPos(-60, -17)
 
     def recalculateAll(self):
+        self.checkVarNames()
         self.evaluateExpression()
+        self.updateLatexSize()
+        self.updateLatexPos()
+        self.updatePlot()
 
     def insertExpr(self):
         if self.varName != 'None':
