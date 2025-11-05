@@ -98,11 +98,8 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(300)  # ms
-        self._debounce.timeout.connect(self.checkVarNames)
-        self._debounce.timeout.connect(self.evaluateExpression)
-        self._debounce.timeout.connect(self.updateLatexSize)
-        self._debounce.timeout.connect(self.updateLatexPos)
-        self._debounce.timeout.connect(self.updatePlot)
+        self._debounce.timeout.connect(self.recalculateAll)
+
         self.inputField.textChanged.connect(self._onTextChanged)
 
     def checkVarNames(self):
@@ -111,6 +108,9 @@ class ExpressionItem(QGraphicsRectItem):
         diff: list = list(set(setVars).symmetric_difference(set(memmoryVars)))
         for var in diff:
             self.evaluator.popVarName(var)
+
+    def sortVars(self):
+        self.instanceList = sorted(self.instanceList, key=lambda x: x.pos().y())
 
     def updatePlot(self):
         if self.plotting:
@@ -236,9 +236,6 @@ class ExpressionItem(QGraphicsRectItem):
         stream = stream.replace('\n', '')
         return stream
 
-    def varNameExists(self):
-        pass
-
     def setupPlotter(self, evaluator: Evaluate) -> None:
         self.plotProxy.show()
         self.plot = plotWidget(self, plotType=evaluator.getUnsingedSymsCount())
@@ -253,8 +250,9 @@ class ExpressionItem(QGraphicsRectItem):
         self.plotProxy.setPos(-60, -17)
 
     def recalculateAll(self):
-        self.checkVarNames()
+        self.sortVars()
         self.evaluateExpression()
+        self.checkVarNames()
         self.updateLatexSize()
         self.updateLatexPos()
         self.updatePlot()
