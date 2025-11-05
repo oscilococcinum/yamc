@@ -13,6 +13,10 @@ from sympy.physics.units import (
         second, ampere, kelvin, mol, candela,
         newton, pascal, m, kg, s, A, K, mole, cd, N, Pa)
 from sympy.physics.units.systems.si import SI
+from sympy.parsing.sympy_parser import (
+        parse_expr, 
+        standard_transformations, 
+        implicit_multiplication_application)
 import re
 
 
@@ -29,6 +33,15 @@ FUNCTIONS: dict = { # Math functions
                     'convertUnits':convert_to, 'lt': latex
                     }
 EVAL_REGEX: str = r'([^|]*)\|?(.*)?$'
+
+def parseEq(eq: str) -> str:
+    try:
+        transformations = (standard_transformations + (implicit_multiplication_application,))
+        result: str = parse_expr(eq, transformations=transformations)
+        return str(result)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return eq
 
 def getUnsignedSymbols(eq) -> list[str]:
     res: list = re.findall(r'[a-zA-Z]+', eq)
@@ -47,6 +60,7 @@ class Evaluate():
         self._additionalData: dict = {}
         self._input: str = input
         self._definition: bool = self._isDefinition()
+#        self._equation: str = parseEq(self._getEquation()) #TODO fix parsing longer varnames, currently 2area = 2*a**2r*2.6
         self._equation: str = self._getEquation()
         self._parameters: (list | None) = self._getParametrs()
         self._varName: str = self._getVarName()
@@ -77,7 +91,7 @@ class Evaluate():
         return self._additionalData[key]
 
     def popVarName(self, varName: str):
-        if varName:
+        if varName in self.varDict.keys():
             self.varDict.pop(varName)
 
     ### Internal
