@@ -159,6 +159,11 @@ class ExpressionItem(QGraphicsRectItem):
         else:
             latexAction.setChecked(False)
 
+        AlignVAction = menu.addAction("Align Vertycaly")
+        menu.addAction(AlignVAction)
+        AlignHAction = menu.addAction("Align Horizontally")
+        menu.addAction(AlignHAction)
+
         chosen = menu.exec(event.screenPos())
         scene = self.scene()
         for item in scene.selectedItems():
@@ -208,6 +213,24 @@ class ExpressionItem(QGraphicsRectItem):
                         item.latex.show()
                         item.resultLabel.hide()
                         item.resultLabel.overwriteVisibility(True)
+                except Exception:
+                    pass
+                event.accept()
+
+            elif chosen == AlignVAction:
+                try:
+                    firstItem = scene.selectedItems()[0]
+                    if item is not scene.selectedItems()[0]:
+                        item.setX(firstItem.x())
+                except Exception:
+                    pass
+                event.accept()
+
+            elif chosen == AlignHAction:
+                try:
+                    firstItem = scene.selectedItems()[0]
+                    if item is not scene.selectedItems()[0]:
+                        item.setY(firstItem.y())
                 except Exception:
                     pass
                 event.accept()
