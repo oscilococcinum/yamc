@@ -160,58 +160,57 @@ class ExpressionItem(QGraphicsRectItem):
             latexAction.setChecked(False)
 
         chosen = menu.exec(event.screenPos())
-        if chosen == removeAction:
-            try:
-                if hasattr(self, "inputFieldProxy"):
-                    type(self).instanceList.remove(self)
-                    Evaluate.varDict.pop(self.varName)
+        scene = self.scene()
+        for item in scene.selectedItems():
+            if chosen == removeAction:
+                try:
+                    if hasattr(item, "inputFieldProxy"):
+                        type(item).instanceList.remove(self)
+                        Evaluate.varDict.pop(item.varName)
 
-                    self.inputFieldProxy.setWidget(None) # type: ignore
-                    self.inputFieldProxy.widget().deleteLater()
-            except Exception:
-                pass
-            scene = self.scene()
-            if scene: scene.removeItem(self)
-            event.accept()
-            return
+                        item.inputFieldProxy.setWidget(None) # type: ignore
+                        item.inputFieldProxy.widget().deleteLater()
+                except Exception:
+                    pass
+                scene = item.scene()
+                if scene: scene.removeItem(item)
+                event.accept()
 
-        elif chosen == plotAction:
-            try:
-                if self.plotting:
-                    self.plotting = False
-                    if self.plot and self.plotProxy:
-                        self.plotProxy.hide()
-                    self.resultLabel.show()
-                    self.resultLabel.overwriteVisibility(False)
-                else:
-                    self.plotting = True
-                    self.plotProxy.show()
-                    self.updatePlot()
-                    self.resultLabel.hide()
-                    self.resultLabel.overwriteVisibility(True)
-            except Exception:
-                pass
-            event.accept()
-            return
+            elif chosen == plotAction:
+                try:
+                    if item.plotting:
+                        item.plotting = False
+                        if item.plot and self.plotProxy:
+                            item.plotProxy.hide()
+                        item.resultLabel.show()
+                        item.resultLabel.overwriteVisibility(False)
+                    else:
+                        item.plotting = True
+                        item.plotProxy.show()
+                        item.updatePlot()
+                        item.resultLabel.hide()
+                        item.resultLabel.overwriteVisibility(True)
+                except Exception:
+                    pass
+                event.accept()
 
-        elif chosen == latexAction:
-            try:
-                if self.latexResult:
-                    self.latexResult = False
-                    self.latexProxy.hide()
-                    self.latex.hide()
-                    self.resultLabel.show()
-                    self.resultLabel.overwriteVisibility(False)
-                else:
-                    self.latexResult = True
-                    self.latexProxy.show()
-                    self.latex.show()
-                    self.resultLabel.hide()
-                    self.resultLabel.overwriteVisibility(True)
-            except Exception:
-                pass
-            event.accept()
-            return
+            elif chosen == latexAction:
+                try:
+                    if item.latexResult:
+                        item.latexResult = False
+                        item.latexProxy.hide()
+                        item.latex.hide()
+                        item.resultLabel.show()
+                        item.resultLabel.overwriteVisibility(False)
+                    else:
+                        item.latexResult = True
+                        item.latexProxy.show()
+                        item.latex.show()
+                        item.resultLabel.hide()
+                        item.resultLabel.overwriteVisibility(True)
+                except Exception:
+                    pass
+                event.accept()
 
         return super().contextMenuEvent(event)
 
