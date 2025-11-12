@@ -19,6 +19,7 @@ class QGraphicsTextLabel(QGraphicsTextItem):
 
 class AutoResizeLineEdit(QLineEdit):
     focused: Signal = Signal()
+    unfocused: Signal = Signal()
     def __init__(self, text="", gparent=None):
         super().__init__(text)
         self.gparent: (QGraphicsItem | None) = gparent
@@ -49,6 +50,10 @@ class AutoResizeLineEdit(QLineEdit):
     def focusInEvent(self, event: QFocusEvent) -> None:
         super().focusInEvent(event)
         self.focused.emit()
+
+    def focusOutEvent(self, event: QFocusEvent) -> None:
+        super().focusOutEvent(event)
+        self.unfocused.emit()
 
 
 class ExpressionItem(QGraphicsRectItem):
@@ -101,6 +106,7 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce.timeout.connect(self.recalculateAll)
 
         self.inputField.textChanged.connect(self._onTextChanged)
+        self.inputField.unfocused.connect(self.removeBlankItem)
 
     def checkVarNames(self):
         setVars: list = [inst.varName for inst in self.instanceList]
@@ -262,3 +268,18 @@ class ExpressionItem(QGraphicsRectItem):
             self.inputField.setText(f'{self.varName}={self.expr}')
         else:
             self.inputField.setText(f'{self.expr}')
+
+    def removeBlankItem(self) -> None:
+        if not self.inputField.text():
+            try:
+                if hasattr(self, "inputFieldProxy"):
+                    type(self).instanceList.remove(self)
+                    Evaluate.varDict.pop(self.varName)
+
+                    self.inputFieldProxy.setWidget(None) # type: ignore
+                    self.inputFieldProxy.widget().deleteLater()
+            except Exception:
+                pass
+            scene = self.scene()
+            if scene: scene.removeItem(self)
+            return
