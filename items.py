@@ -106,7 +106,7 @@ class ExpressionItem(QGraphicsRectItem):
         self._debounce.timeout.connect(self.recalculateAll)
 
         self.inputField.textChanged.connect(self._onTextChanged)
-        self.inputField.unfocused.connect(self.removeBlankItem)
+        self.inputField.unfocused.connect(self.checkBlankItem)
 
     def checkVarNames(self):
         setVars: list = [inst.varName for inst in self.instanceList]
@@ -269,7 +269,7 @@ class ExpressionItem(QGraphicsRectItem):
         else:
             self.inputField.setText(f'{self.expr}')
 
-    def removeBlankItem(self) -> None:
+    def checkBlankItem(self) -> None:
         if not self.inputField.text():
             try:
                 if hasattr(self, "inputFieldProxy"):
