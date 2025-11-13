@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QLineEdit, QGraphicsProxyWidget, QGraphicsScene
 )
 from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QAction, Qt
-from PySide6.QtCore import QTimer, QSizeF, Signal
+from PySide6.QtCore import QTimer, Signal
 from latex import LatexWidget
 from solve import Evaluate
 from ploting import *
@@ -57,7 +57,7 @@ class AutoResizeLineEdit(QLineEdit):
 
 
 class ExpressionItem(QGraphicsRectItem):
-    instanceList: list = []
+    instanceList: list['ExpressionItem'] = []
     def __init__(self, x, y, expr='', result='', lastVarName='', varName='', desc='', plotting=False, latexResult=False):
         super().__init__(0, 0, 220, 30)
         type(self).instanceList.append(self)
@@ -166,7 +166,9 @@ class ExpressionItem(QGraphicsRectItem):
 
         chosen = menu.exec(event.screenPos())
         scene = self.scene()
-        for item in scene.selectedItems():
+
+        selection:list['ExpressionItem'] = [it for it in ExpressionItem.instanceList if it.isSelected()]
+        for item in selection:
             if chosen == removeAction:
                 try:
                     if hasattr(item, "inputFieldProxy"):
@@ -219,18 +221,16 @@ class ExpressionItem(QGraphicsRectItem):
 
             elif chosen == AlignVAction:
                 try:
-                    firstItem = scene.selectedItems()[0]
-                    if item is not scene.selectedItems()[0]:
-                        item.setX(firstItem.x())
+                    if item is not self:
+                        item.setX(self.pos().x())
                 except Exception:
                     pass
                 event.accept()
 
             elif chosen == AlignHAction:
                 try:
-                    firstItem = scene.selectedItems()[0]
-                    if item is not scene.selectedItems()[0]:
-                        item.setY(firstItem.y())
+                    if item is not self:
+                        item.setY(self.pos().y())
                 except Exception:
                     pass
                 event.accept()
