@@ -53,7 +53,7 @@ def getSymbols(eq) -> list[str]:
     res: list = re.findall(r'[a-zA-Z]+', eq)
     return list(set([x for x in res if x not in FUNCTIONS]))
 
-class Evaluate():
+class Solver():
     varDict: dict = {}
 
     def __init__(self, input: str = '') -> None:

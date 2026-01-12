@@ -2,7 +2,7 @@
 import sys
 from PySide6.QtCore import QSize, QRectF, QPointF, Qt
 from PySide6.QtGui import QPainter, QPainterPath, QColor
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QLabel
+from PySide6.QtWidgets import QWidget
 
 # Matplotlib (no GUI backend needed here)
 from matplotlib.textpath import TextPath
@@ -315,56 +315,3 @@ class LatexWidget(QWidget):
         # Trigger re-layout if in natural mode
         if self._scale_mode == "natural":
             self.updateGeometry()
-
-
-# ---------------------------
-# Minimal runnable demo window
-# ---------------------------
-
-class Demo(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("LaTeX in QWidget via Matplotlib (vector glyphs)")
-
-        self.latex = LatexWidget(
-            text=r"\int_0^{\infty} e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}",
-            font_family="STIXGeneral",   # try "DejaVu Serif" or "STIXGeneral"
-            font_size_pt=28,
-            color=QColor("#0b3d91"),
-            is_math=True,
-            usetex=False,                # set True if you have LaTeX installed
-            scale_mode="fit",            # "natural" or "fit"
-            padding_pt=6.0,
-        )
-
-        self.input = QLineEdit(self.latex.text())
-        self.input.setPlaceholderText(r'Enter LaTeX (mathtext), e.g. \frac{a}{b}')
-        self.input.returnPressed.connect(self._apply_text)
-
-        self.toggle_mode = QPushButton("Toggle scale mode (fit/natural)")
-        self.toggle_mode.clicked.connect(self._toggle_scale_mode)
-
-        top = QHBoxLayout()
-        top.addWidget(QLabel("LaTeX:"))
-        top.addWidget(self.input)
-        top.addWidget(self.toggle_mode)
-
-        layout = QVBoxLayout(self)
-        layout.addLayout(top)
-        layout.addWidget(self.latex, stretch=1)
-
-        self.resize(900, 300)
-
-    def _apply_text(self):
-        self.latex.setText(self.input.text())
-
-    def _toggle_scale_mode(self):
-        mode = "natural" if self.latex.scaleMode() == "fit" else "fit"
-        self.latex.setScaleMode(mode)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    win = Demo()
-    win.show()
-    sys.exit(app.exec())

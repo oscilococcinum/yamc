@@ -1,59 +1,12 @@
-from PySide6.QtWidgets import (
-    QGraphicsSceneContextMenuEvent, QGraphicsTextItem, QGraphicsItem, QGraphicsRectItem,
-    QLineEdit, QGraphicsProxyWidget, QGraphicsScene
-)
-from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QAction, Qt
-from PySide6.QtCore import QTimer, Signal
-from yamc.latex import LatexWidget
-from yamc.solve import Evaluate
-from yamc.ploting import *
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsProxyWidget, QGraphicsSceneContextMenuEvent
+from PySide6.QtGui import QBrush, QColor, QFontMetrics, QAction, Qt
+from PySide6.QtCore import QTimer
 from matplotlib import cm
-
-class QGraphicsTextLabel(QGraphicsTextItem):
-    def __init__(self, text='', parent=None) -> None:
-        super().__init__(text, parent)
-        self.visibilityOverwriten: bool = False
-
-    def overwriteVisibility(self, isOverwritten: bool) -> None:
-        self.visibility_overwriten = isOverwritten
-
-class AutoResizeLineEdit(QLineEdit):
-    focused: Signal = Signal()
-    unfocused: Signal = Signal()
-    def __init__(self, text="", gparent=None):
-        super().__init__(text)
-        self.gparent: (QGraphicsItem | None) = gparent
-        self.setStyleSheet("""
-            AutoResizeLineEdit {
-                background: rgba(255, 255, 255, 0);  /* semi-transparent white */
-                color: black;  /* fully visible text */
-                border: 0px solid gray;
-            }
-        """)
-
-        self.adjustSizeToText()
-        self.textChanged.connect(self.adjustSizeToText)
-        self.focused.connect(self.selectParent)
-
-    def adjustSizeToText(self):
-        fm = QFontMetrics(self.font())
-        text_width = fm.horizontalAdvance(self.text())
-        self.setFixedWidth(text_width + 10)
-
-    def selectParent(self):
-        if self.gparent:
-            scene: QGraphicsScene = self.gparent.scene()
-            scene.clearSelection()
-            self.gparent.setSelected(True)
-        else: pass
-
-    def focusInEvent(self, event: QFocusEvent) -> None:
-        super().focusInEvent(event)
-        self.focused.emit()
-
-    def focusOutEvent(self, event: QFocusEvent) -> None:
-        super().focusOutEvent(event)
-        self.unfocused.emit()
+from yamc.LatexWidget import LatexWidget
+from yamc.Solver import Solver
+from yamc.PlotWidget import PlotWidget
+from yamc.QGraphicsTextLabel import QGraphicsTextLabel
+from yamc.AutoResizeLineEdit import AutoResizeLineEdit
 
 
 class ExpressionItem(QGraphicsRectItem):
@@ -69,7 +22,7 @@ class ExpressionItem(QGraphicsRectItem):
         self.description: str = desc
         self.plotting: bool = plotting
         self.latexResult: bool = latexResult
-        self.evaluator = Evaluate()
+        self.evaluator = Solver()
 
         self.setBrush(QBrush(QColor(0, 0, 0, 0)))
         self.setPen(Qt.NoPen) # type: ignore
@@ -173,7 +126,7 @@ class ExpressionItem(QGraphicsRectItem):
                 try:
                     if hasattr(item, "inputFieldProxy"):
                         type(item).instanceList.remove(self)
-                        Evaluate.varDict.pop(item.varName)
+                        Solver.varDict.pop(item.varName)
 
                         item.inputFieldProxy.setWidget(None) # type: ignore
                         item.inputFieldProxy.widget().deleteLater()
@@ -264,9 +217,9 @@ class ExpressionItem(QGraphicsRectItem):
         stream = stream.replace('\n', '')
         return stream
 
-    def setupPlotter(self, evaluator: Evaluate) -> None:
+    def setupPlotter(self, evaluator: Solver) -> None:
         self.plotProxy.show()
-        self.plot = plotWidget(self, plotType=evaluator.getUnsingedSymsCount())
+        self.plot = PlotWidget(self, plotType=evaluator.getUnsingedSymsCount())
         self.plot.axes.cla()
         match evaluator.getUnsingedSymsCount():
             case 1:
@@ -296,7 +249,7 @@ class ExpressionItem(QGraphicsRectItem):
             try:
                 if hasattr(self, "inputFieldProxy"):
                     type(self).instanceList.remove(self)
-                    Evaluate.varDict.pop(self.varName)
+                    Solver.varDict.pop(self.varName)
 
                     self.inputFieldProxy.setWidget(None) # type: ignore
                     self.inputFieldProxy.widget().deleteLater()
