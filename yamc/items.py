@@ -4,9 +4,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QBrush, QColor, QFocusEvent, QFontMetrics, QAction, Qt
 from PySide6.QtCore import QTimer, Signal
-from latex import LatexWidget
-from solve import Evaluate
-from ploting import *
+from yamc.latex import LatexWidget
+from yamc.solve import Evaluate
+from yamc.ploting import *
 from matplotlib import cm
 
 class QGraphicsTextLabel(QGraphicsTextItem):
@@ -110,7 +110,7 @@ class ExpressionItem(QGraphicsRectItem):
 
     def checkVarNames(self):
         setVars: list = [inst.varName for inst in self.instanceList]
-        memmoryVars: list = self.evaluator.varDict.keys()
+        memmoryVars: list = list(self.evaluator.varDict.keys())
         diff: list = list(set(setVars).symmetric_difference(set(memmoryVars)))
         for var in diff:
             self.evaluator.popVarName(var)

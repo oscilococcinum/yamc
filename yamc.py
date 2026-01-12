@@ -4,8 +4,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QCursor, QBrush, QColor, QPixmap, QTransform
 from PySide6.QtCore import Qt, QTimer
-from solve import Evaluate
-from items import ExpressionItem
+from yamc.solve import Evaluate
+from yamc.items import ExpressionItem
 import sys
 import re
 
@@ -14,13 +14,13 @@ class View(QGraphicsView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFocusPolicy(Qt.StrongFocus) # type: ignore
-        self.setDragMode(QGraphicsView.RubberBandDrag)
+        self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         self.setSceneRect(0, 0, 720, 1280)
         self.setBackgroundBrush(self.getBGBrush())
 
     def getBGBrush(self) -> QBrush:
         customBrush = QBrush()
-        customBrush.setStyle(Qt.CrossPattern)
+        customBrush.setStyle(Qt.BrushStyle.CrossPattern)
         bcolor = QColor()
         bcolor.setAlpha(30)
         customBrush.setColor(bcolor)

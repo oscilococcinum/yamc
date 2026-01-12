@@ -179,7 +179,7 @@ class LatexWidget(QWidget):
 
         painter = QPainter(self)
         painter.setRenderHints(
-            QPainter.Antialiasing | QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform
+            QPainter.RenderHint.Antialiasing | QPainter.RenderHint.TextAntialiasing | QPainter.RenderHint.SmoothPixmapTransform
         )
 
         # Convert points → pixels based on device DPI (typographic point = 1/72 inch)
@@ -222,7 +222,7 @@ class LatexWidget(QWidget):
         offset_y_pt = self._padding_pt + (draw_h_pt - content_h_pt) / 2.0 - bb.top()
 
         painter.translate(offset_x_pt, offset_y_pt)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(self._color)
         painter.drawPath(self._path)
 
@@ -330,7 +330,7 @@ class Demo(QWidget):
             text=r"\int_0^{\infty} e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}",
             font_family="STIXGeneral",   # try "DejaVu Serif" or "STIXGeneral"
             font_size_pt=28,
-            color="#0b3d91",
+            color=QColor("#0b3d91"),
             is_math=True,
             usetex=False,                # set True if you have LaTeX installed
             scale_mode="fit",            # "natural" or "fit"
