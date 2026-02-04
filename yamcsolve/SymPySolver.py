@@ -68,6 +68,7 @@ def symPySolve(eq: str) -> str:
         return f'Error: {str(e)}'
 
 class SymPySolver:
+    '''Singelton Solver object. It handles all solving and storing of app data'''
     def __init__(self) -> None:
         self._equations: dict[int, Equation] = {}
         self._results: dict[int, Equation] = {}
