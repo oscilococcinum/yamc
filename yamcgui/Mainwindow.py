@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QGraphicsScene, QVBoxLayout, QWidget
-from yamc.View import View
+from yamcgui.View import View
 
 class MainWindow(QWidget):
     def __init__(self):

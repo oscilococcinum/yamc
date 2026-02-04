@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QApplication
-from yamc.Mainwindow import MainWindow
+from yamcgui.Mainwindow import MainWindow
 import sys
 
 if __name__ == "__main__":

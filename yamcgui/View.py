@@ -2,8 +2,8 @@
 from PySide6.QtWidgets import QGraphicsView, QFileDialog
 from PySide6.QtGui import QCursor, QBrush, QColor
 from PySide6.QtCore import Qt, QTimer
-from yamc.Solver import Solver
-from yamc.ExpressionItem import ExpressionItem
+from yamcsolve.Solver import Solver
+from yamcgui.ExpressionItem import ExpressionItem
 import re
 
 class View(QGraphicsView):

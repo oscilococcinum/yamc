@@ -2,11 +2,11 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsProxyWi
 from PySide6.QtGui import QBrush, QColor, QFontMetrics, QAction, Qt
 from PySide6.QtCore import QTimer
 from matplotlib import cm
-from yamc.LatexWidget import LatexWidget
-from yamc.Solver import Solver
-from yamc.PlotWidget import PlotWidget
-from yamc.QGraphicsTextLabel import QGraphicsTextLabel
-from yamc.AutoResizeLineEdit import AutoResizeLineEdit
+from yamcgui.LatexWidget import LatexWidget
+from yamcsolve.Solver import Solver
+from yamcgui.PlotWidget import PlotWidget
+from yamcgui.QGraphicsTextLabel import QGraphicsTextLabel
+from yamcgui.AutoResizeLineEdit import AutoResizeLineEdit
 
 
 class ExpressionItem(QGraphicsRectItem):
