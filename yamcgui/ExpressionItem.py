@@ -6,7 +6,8 @@ from yamcgui.LatexWidget import LatexWidget
 #from yamcgui.PlotWidget import PlotWidget
 from yamcgui.QGraphicsTextLabel import QGraphicsTextLabel
 from yamcgui.AutoResizeLineEdit import AutoResizeLineEdit
-from yamcsolve.Equation import EquationLike, VisType
+from yamcsolve.Equation import VisType
+from yamcsolve.SymPySolver import EquationLike
 from yamcsolve.ActiveSolvers import ActiveSolver
 
 
