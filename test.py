@@ -1,16 +1,14 @@
 from yamcsolve.SymPySolver import SymPySolver
+from yamcsolve.ActiveSolvers import ActiveSolver
 
-def testSolving(eqList: list[str], resList: list[str]) -> None:
-    testSolver: SymPySolver = SymPySolver()
+
+def testSolving(solver: SymPySolver, eqList: list[str], resList: list[str]) -> None:
+    testSolver: SymPySolver = solver
     for i, j in zip(eqList, resList):
-        id: int | None = testSolver.addEquation(i)
-        assert id is int
-        try:
-            testSolver.recomputeEq(id)
-            rEq: str = testSolver.getResult(id).getStream()
-            print(f'{j == rEq}')
-        except:
-            print('No equation or result for this id')
+        id: int = testSolver.addEquation(i)
+        testSolver.evalEq(id)
+        rEq: str = testSolver.getResult(id).getStream()
+        print(f'{j == rEq}')
 
 if __name__ == '__main__':
     equations = [
@@ -25,4 +23,7 @@ if __name__ == '__main__':
       "x - 12",
       "4*x - 16"
     ]
-    testSolving(equations, results)
+    testSolving(ActiveSolver, equations, results)
+
+    print(ActiveSolver.getAllEquationsStream())
+    

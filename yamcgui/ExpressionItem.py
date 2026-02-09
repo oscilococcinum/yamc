@@ -1,39 +1,34 @@
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsRectItem, QGraphicsProxyWidget, QGraphicsSceneContextMenuEvent
 from PySide6.QtGui import QBrush, QColor, QFontMetrics, QAction, Qt
 from PySide6.QtCore import QTimer
-from matplotlib import cm
+#from matplotlib import cm
 from yamcgui.LatexWidget import LatexWidget
-from yamcsolve.Solver import Solver
-from yamcgui.PlotWidget import PlotWidget
+#from yamcgui.PlotWidget import PlotWidget
 from yamcgui.QGraphicsTextLabel import QGraphicsTextLabel
 from yamcgui.AutoResizeLineEdit import AutoResizeLineEdit
+from yamcsolve.Equation import EquationLike, VisType
+from yamcsolve.ActiveSolvers import ActiveSolver
 
 
 class ExpressionItem(QGraphicsRectItem):
-    instanceList: list['ExpressionItem'] = []
-    def __init__(self, x, y, expr='', result='', lastVarName='', varName='', desc='', plotting=False, latexResult=False):
+    instances: dict[int, 'ExpressionItem'] = {}
+    def __init__(self, x: float, y: float) -> None:
         super().__init__(0, 0, 220, 30)
-        type(self).instanceList.append(self)
         self.setPos(x, y)
-        self.expr: str = expr
-        self.result: str = result
-        self.lastVarName: str = lastVarName
-        self.varName: str = varName
-        self.description: str = desc
-        self.plotting: bool = plotting
-        self.latexResult: bool = latexResult
-        self.evaluator = Solver()
+        self._id: int = ActiveSolver.getFreeId()
+        self._equation: EquationLike = ActiveSolver.getEquation(self.getId())
+        type(self).instances[self.getId()] = self
 
         self.setBrush(QBrush(QColor(0, 0, 0, 0)))
-        self.setPen(Qt.NoPen) # type: ignore
-        self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable) # type: ignore
+        self.setPen(Qt.PenStyle.NoPen)
+        self.setFlags(QGraphicsItem.GraphicsItemFlag.ItemIsMovable | QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
 
         self.inputField = AutoResizeLineEdit('', self)
         self.inputField.setPlaceholderText("Enter expression")
         self.inputField.setFrame(False)
 
         self.resultLabel = QGraphicsTextLabel("", self)
-        self.resultLabel.setTextInteractionFlags(Qt.TextSelectableByMouse) # type: ignore
+        self.resultLabel.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
 
         self.inputFieldProxy = QGraphicsProxyWidget(self)
         self.inputFieldProxy.setWidget(self.inputField)
@@ -48,33 +43,26 @@ class ExpressionItem(QGraphicsRectItem):
 
         self.latex: LatexWidget = LatexWidget()
         self.latexProxy: QGraphicsProxyWidget = QGraphicsProxyWidget(self)
-        if not latexResult:
-            self.latexProxy.hide()
-            self.latex.hide()
+        self.latexProxy.hide()
+        self.latex.hide()
         self.latexProxy.setWidget(self.latex)
 
         self._debounce = QTimer()
         self._debounce.setSingleShot(True)
-        self._debounce.setInterval(300)  # ms
-        self._debounce.timeout.connect(self.recalculateAll)
+        self._debounce.setInterval(300)
+        self._debounce.timeout.connect(self.evaluateExpression)
 
         self.inputField.textChanged.connect(self._onTextChanged)
         self.inputField.unfocused.connect(self.checkBlankItem)
 
-    def checkVarNames(self):
-        setVars: list = [inst.varName for inst in self.instanceList]
-        memmoryVars: list = list(self.evaluator.varDict.keys())
-        diff: list = list(set(setVars).symmetric_difference(set(memmoryVars)))
-        for var in diff:
-            self.evaluator.popVarName(var)
+    def getId(self) -> int:
+        return self._id
+    
+    def getEquation(self) -> EquationLike:
+        return self._equation
 
-    def sortVars(self):
-        self.instanceList = sorted(self.instanceList, key=lambda x: x.pos().y())
-
-    def updatePlot(self):
-        if self.plotting:
-            self.evaluator.evalPlotData()
-            self.setupPlotter(self.evaluator)
+    def _onTextChanged(self) -> None:
+        self._debounce.start()
 
     def updateLatexSize(self):
         self.latex.adjustSize()
@@ -100,14 +88,14 @@ class ExpressionItem(QGraphicsRectItem):
 
         plotAction: QAction = QAction('Plot', checkable=True)
         menu.addAction(plotAction)
-        if self.plotting:
+        if self.getEquation().getVisType() == VisType.Plot:
             plotAction.setChecked(True)
         else:
             plotAction.setChecked(False)
 
         latexAction: QAction = QAction('Latex', checkable=True)
         menu.addAction(latexAction)
-        if self.latexResult:
+        if self.getEquation().getVisType() == VisType.Latex:
             latexAction.setChecked(True)
         else:
             latexAction.setChecked(False)
@@ -120,13 +108,13 @@ class ExpressionItem(QGraphicsRectItem):
         chosen = menu.exec(event.screenPos())
         scene = self.scene()
 
-        selection:list['ExpressionItem'] = [it for it in ExpressionItem.instanceList if it.isSelected()]
+        selection:list['ExpressionItem'] = [i for i in ExpressionItem.instances.values() if i.isSelected()]
         for item in selection:
             if chosen == removeAction:
                 try:
                     if hasattr(item, "inputFieldProxy"):
-                        type(item).instanceList.remove(self)
-                        Solver.varDict.pop(item.varName)
+                        type(item).instances.pop(item.getId())
+                        ActiveSolver.popEquation(item.getId())
 
                         item.inputFieldProxy.setWidget(None) # type: ignore
                         item.inputFieldProxy.widget().deleteLater()
@@ -138,16 +126,16 @@ class ExpressionItem(QGraphicsRectItem):
 
             elif chosen == plotAction:
                 try:
-                    if item.plotting:
-                        item.plotting = False
+                    if ActiveSolver.getEquation(self.getId()).getVisType() == VisType.Plot:
+                        ActiveSolver.getEquation(self.getId()).setVisType(VisType.Text)
                         if item.plot and self.plotProxy:
                             item.plotProxy.hide()
                         item.resultLabel.show()
                         item.resultLabel.overwriteVisibility(False)
-                    else:
-                        item.plotting = True
+                    elif ActiveSolver.getEquation(self.getId()).getVisType() != VisType.Plot:
+                        ActiveSolver.getEquation(self.getId()).setVisType(VisType.Plot)
                         item.plotProxy.show()
-                        item.updatePlot()
+#                        item.updatePlot()
                         item.resultLabel.hide()
                         item.resultLabel.overwriteVisibility(True)
                 except Exception:
@@ -156,14 +144,14 @@ class ExpressionItem(QGraphicsRectItem):
 
             elif chosen == latexAction:
                 try:
-                    if item.latexResult:
-                        item.latexResult = False
+                    if ActiveSolver.getEquation(self.getId()).getVisType() == VisType.Latex:
+                        ActiveSolver.getEquation(self.getId()).setVisType(VisType.Text)
                         item.latexProxy.hide()
                         item.latex.hide()
                         item.resultLabel.show()
                         item.resultLabel.overwriteVisibility(False)
-                    else:
-                        item.latexResult = True
+                    elif ActiveSolver.getEquation(self.getId()).getVisType() != VisType.Latex:
+                        ActiveSolver.getEquation(self.getId()).setVisType(VisType.Latex)
                         item.latexProxy.show()
                         item.latex.show()
                         item.resultLabel.hide()
@@ -190,66 +178,48 @@ class ExpressionItem(QGraphicsRectItem):
 
         return super().contextMenuEvent(event)
 
-    def _onTextChanged(self, _):
-        self._debounce.start()
-
     def evaluateExpression(self):
         expr_str = self.inputField.text().strip()
         if not expr_str:
             self.resultLabel.setPlainText("")
             return
         try:
-            self.expr = expr_str.strip()
-            self.evaluator.eval(self.expr)
-            self.result = self.evaluator.getResult()
-            self.varName = self.evaluator.getVarName()
-            self.resultLabel.setPlainText(f"= {self.result}")
-            self.latex.setText(self.evaluator.getLatex()) 
+            ActiveSolver.addEquation(self.getId(), expr_str)
+            ActiveSolver.evalEq(self.getId())
+            solverResult: str = ActiveSolver.getResult(self.getId()).getStream()
+            self.resultLabel.setPlainText(f"= {solverResult}")
+            #self.latex.setText(self.evaluator.getLatex()) 
         except Exception as e:
             self.resultLabel.setPlainText(f"Error: {str(e)}")
 
-    def saveFile(self) -> str:
-        if self.plotting:
-            plt = "+"
-        else:
-            plt = ''
-        stream = f'{type(self)};{self.pos()};{self.expr};{self.result};{self.lastVarName};{self.varName};{self.description};{plt}'
-        stream = stream.replace('\n', '')
-        return stream
+#    def saveFile(self) -> str:
+#        if self.plotting:
+#            plt = "+"
+#        else:
+#            plt = ''
+#        stream = f'{type(self)};{self.pos()};{self.expr};{self.result};{self.lastVarName};{self.varName};{self.description};{plt}'
+#        stream = stream.replace('\n', '')
+#        return stream
 
-    def setupPlotter(self, evaluator: Solver) -> None:
-        self.plotProxy.show()
-        self.plot = PlotWidget(self, plotType=evaluator.getUnsingedSymsCount())
-        self.plot.axes.cla()
-        match evaluator.getUnsingedSymsCount():
-            case 1:
-                self.plot.axes.plot(evaluator.getAddData('X'), evaluator.getAddData('plotResult'))
-            case 2:
-                self.plot.axes.plot_surface(evaluator.getAddData('X'), evaluator.getAddData('Y'), evaluator.getAddData('plotResult'), cmap=cm.magma) #type: ignore
-        self.plot.draw_idle()
-        self.plotProxy.setWidget(self.plot)
-        self.plotProxy.setPos(-60, -17)
-
-    def recalculateAll(self):
-        self.sortVars()
-        self.evaluateExpression()
-        self.checkVarNames()
-        self.updateLatexSize()
-        self.updateLatexPos()
-        self.updatePlot()
-
-    def insertExpr(self):
-        if self.varName != 'None':
-            self.inputField.setText(f'{self.varName}={self.expr}')
-        else:
-            self.inputField.setText(f'{self.expr}')
+#    def setupPlotter(self, evaluator: Solver) -> None:
+#        self.plotProxy.show()
+#        self.plot = PlotWidget(self, plotType=evaluator.getUnsingedSymsCount())
+#        self.plot.axes.cla()
+#        match evaluator.getUnsingedSymsCount():
+#            case 1:
+#                self.plot.axes.plot(evaluator.getAddData('X'), evaluator.getAddData('plotResult'))
+#            case 2:
+#                self.plot.axes.plot_surface(evaluator.getAddData('X'), evaluator.getAddData('Y'), evaluator.getAddData('plotResult'), cmap=cm.magma) #type: ignore
+#        self.plot.draw_idle()
+#        self.plotProxy.setWidget(self.plot)
+#        self.plotProxy.setPos(-60, -17)
 
     def checkBlankItem(self) -> None:
         if not self.inputField.text():
             try:
                 if hasattr(self, "inputFieldProxy"):
-                    type(self).instanceList.remove(self)
-                    Solver.varDict.pop(self.varName)
+                    type(self).instances.pop(self.getId())
+                    ActiveSolver.popEquation(self.getId())
 
                     self.inputFieldProxy.setWidget(None) # type: ignore
                     self.inputFieldProxy.widget().deleteLater()

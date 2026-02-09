@@ -1,15 +1,17 @@
 
-from PySide6.QtWidgets import QGraphicsView, QFileDialog
-from PySide6.QtGui import QCursor, QBrush, QColor
+from PySide6.QtWidgets import QGraphicsView#, QFileDialog
+from PySide6.QtGui import QCursor, QBrush, QColor, QKeyEvent
 from PySide6.QtCore import Qt, QTimer
-from yamcsolve.Solver import Solver
 from yamcgui.ExpressionItem import ExpressionItem
-import re
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from yamcgui.Mainwindow import MainWindow
+
 
 class View(QGraphicsView):
-    def __init__(self, parent=None):
+    def __init__(self, parent: 'MainWindow'):
         super().__init__(parent)
-        self.setFocusPolicy(Qt.StrongFocus) # type: ignore
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
         self.setSceneRect(0, 0, 720, 1280)
         self.setBackgroundBrush(self.getBGBrush())
@@ -22,7 +24,7 @@ class View(QGraphicsView):
         customBrush.setColor(bcolor)
         return customBrush
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         scene = self.scene()
         text = event.text()
         modifiers = event.modifiers()
@@ -49,69 +51,70 @@ class View(QGraphicsView):
             event.accept()
             return
 
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_Equal: # type: ignore
-            for item in ExpressionItem.instanceList:
-                item.recalculateAll()
+        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier and event.key() == Qt.Key.Key_Equal:
+            item: 'ExpressionItem'
+            for item in ExpressionItem.instances.values():
+                item.evaluateExpression()
             event.accept()
             return
 
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_S: # type: ignore
-
-            file_path, _ = QFileDialog.getSaveFileName(
-                parent=None,
-                caption="Save File",
-                dir="",
-                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
-            )
-            with open(file_path, 'w') as file:
-                for item in ExpressionItem.instanceList:
-                    file.write(f'{item.saveFile()}\n')
-            event.accept()
-            return
+#        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_S: # type: ignore
+#
+#            file_path, _ = QFileDialog.getSaveFileName(
+#                parent=None,
+#                caption="Save File",
+#                dir="",
+#                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
+#            )
+#            with open(file_path, 'w') as file:
+#                for item in ExpressionItem.instanceList:
+#                    file.write(f'{item.saveFile()}\n')
+#            event.accept()
+#            return
 
         #TODO Add full suport for saving integrals and diffs, currntly dosent support saving differentials, and params for ploting
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
-            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem}
+#        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_O: # type: ignore
+#            objDict: dict = {"<class 'items.ExpressionItem'>": ExpressionItem}
+#
+#            file_path, _ = QFileDialog.getOpenFileName(
+#                parent=None,
+#                caption="Save File",
+#                dir="",
+#                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
+#            )
+#
+#            with open(file_path, 'r') as file:
+#                for line in file:
+#                    parts = line.split(';')
+#                    parts = [x.replace('\n', '') for x in parts]
+#                    cls = objDict[parts[0]]
+#                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
+#                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
+#                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5] ,parts[6] ,bool(parts[7]) )
+#                    scene.addItem(obj)
+#                    obj._debounce.start()
+#                    obj.rearrangeItem()
+#                    obj.insertExpr()
+#            event.accept()
+#            return
 
-            file_path, _ = QFileDialog.getOpenFileName(
-                parent=None,
-                caption="Save File",
-                dir="",
-                filter="YAMC Files (*.yamc);;Text Files (*.txt);;All Files (*)"
-            )
-
-            with open(file_path, 'r') as file:
-                for line in file:
-                    parts = line.split(';')
-                    parts = [x.replace('\n', '') for x in parts]
-                    cls = objDict[parts[0]]
-                    point_match = re.search(r'QPointF\(([\d\.\-]+), ([\d\.\-]+)\)', parts[1])
-                    x, y = float(point_match.group(1)), float(point_match.group(2)) # type: ignore
-                    obj: ExpressionItem = cls(x, y, parts[2], parts[3], parts[4], parts[5] ,parts[6] ,bool(parts[7]) )
-                    scene.addItem(obj)
-                    obj._debounce.start()
-                    obj.rearrangeItem()
-                    obj.insertExpr()
-            event.accept()
-            return
-
-        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W: # type: ignore
-            item: ExpressionItem
-            for item in ExpressionItem.instanceList[:]:
-                type(item).instanceList.remove(item)
-                try:
-                    Solver.varDict.pop(item.varName)
-                except: pass
-
-                scene = item.scene()
-                if scene: scene.removeItem(item)
-
-                if item.childItems():
-                    for child in item.childItems():
-                        del child
-                    del item
-            event.accept()
-            return
+#        elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_W: # type: ignore
+#            item: ExpressionItem
+#            for item in ExpressionItem.instanceList[:]:
+#                type(item).instanceList.remove(item)
+#                try:
+#                    Solver.varDict.pop(item.varName)
+#                except: pass
+#
+#                scene = item.scene()
+#                if scene: scene.removeItem(item)
+#
+#                if item.childItems():
+#                    for child in item.childItems():
+#                        del child
+#                    del item
+#            event.accept()
+#            return
 
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key.Key_Period: # type: ignore
             selection: list[ExpressionItem] = scene.selectedItems() #type: ignore

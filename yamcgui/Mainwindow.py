@@ -9,7 +9,7 @@ class MainWindow(QWidget):
 
         layout = QVBoxLayout(self)
 
-        self.view = View()
+        self.view = View(self)
         self.scene = QGraphicsScene()
         self.view.setScene(self.scene)
         layout.addWidget(self.view)
