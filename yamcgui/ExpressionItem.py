@@ -187,7 +187,7 @@ class ExpressionItem(QGraphicsRectItem):
         try:
             ActiveSolver.addEquation(self.getId(), expr_str)
             ActiveSolver.evalEq(self.getId())
-            solverResult: str = ActiveSolver.getResult(self.getId()).getStream()
+            solverResult: str = ActiveSolver.getEquation(self.getId()).getResultStream()
             self.resultLabel.setPlainText(f"= {solverResult}")
             #self.latex.setText(self.evaluator.getLatex()) 
         except Exception as e:

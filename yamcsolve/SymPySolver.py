@@ -14,13 +14,17 @@ ASSIGN_REGEX: str = r'(?<![<>!]):='
 SOLVE_REGEX: str = r'(?<![<>!])='
 
 class EquationLike(Protocol):
+    def setStream(self, stream: str) -> None: ...
     def getStream(self) -> str: ...
-    def setEvalType(self, evalType: EqEvalType): ...
+    def setResultStream(self, stream: str) -> None: ...
+    def getResultStream(self) -> str: ...
     def getEvalType(self) -> EqEvalType: ...
     def setVisType(self, visType: VisType) -> None: ...
     def getVisType(self) -> VisType: ...
     def getMyVarName(self) -> str | None: ...
+    def setMyVarName(self, varName: str) -> None: ...
     def getVarsIDepOn(self) -> list[str]: ...
+    def setVarsIDepOn(self, varsIDepOn: list[str]) -> None: ...
     def setIsDependent(self, isDep: bool) -> None: ...
     def setHasCyclicDepInfo(self, hasCyclicDep: bool) -> None: ...
     def getHasCyclicDepInfo(self) -> bool: ...
@@ -29,18 +33,11 @@ class EquationLike(Protocol):
     def setRecalculationReq(self, recReq: bool) -> None: ...
     def getRecalculationReq(self) -> bool: ...
 
-def symPySolve(eq: EquationLike, varDict: dict[str, EquationLike]) -> EquationLike:
-    eqStream: str = eq.getStream()
-    #asSplit: list[str] = re.split(ASSIGN_REGEX, eqStream)
-    #solSplit: list[str] = re.split(SOLVE_REGEX, eqStream)
-    return(Equation(parse_expr(eqStream, varDict)))
-
 class SymPySolver:
     '''Singelton Solver object. It handles all solving and storing of app data'''
     def __init__(self) -> None:
         self._equations: dict[int, EquationLike] = {}
-        self._results: dict[int, EquationLike] = {}
-        self._varDict: dict[str, EquationLike] = {}
+        self._varDict: dict[str, str] = {}
         self._plotData: dict[int, PlotData] = {}
 
     # Public
@@ -49,8 +46,9 @@ class SymPySolver:
 
     def evalEq(self, id: int) -> None:
         try:
+            self.updateVarDict()
             eq = self._equations[id]
-            self._results[id] = symPySolve(eq)
+            self.assignSolve(eq, self._varDict)
         except Exception as e:
             print(f'recomputeEq failed due to: {e}')
 
@@ -58,16 +56,15 @@ class SymPySolver:
         newEq = Equation(eq)
         self._equations[id] = newEq
     
-    def getFreeId(self) -> int:
-        lastKey = len(self._equations.keys())
-        return lastKey + 1
-
     def popEquation(self, id: int) -> None:
         try:
             self._equations.pop(id)
-            self._results.pop(id)
         except Exception as e:
             print(f'popEquation failed due to: {e}')
+
+    def getFreeId(self) -> int:
+        lastKey = len(self._equations.keys())
+        return lastKey + 1
 
     def getPlotData(self, id: int) -> PlotData | None:
         pass
@@ -78,14 +75,31 @@ class SymPySolver:
         except Exception as e:
             return NoneEquation(f'{e}')
 
-    def getResult(self, id: int) -> EquationLike:
-        try:
-            return self._results[id]
-        except Exception as e:
-            return NoneEquation(f'{e}')
-        
     def getAllEquations(self) -> list[EquationLike]:
         return list(self._equations.values())
 
     def getAllEquationsStream(self) -> list[str]:
         return [i.getStream() for i in self._equations.values()]
+
+    def updateVarDict(self) -> None:
+        self._varDict.clear()
+        for i in self._equations.values():
+            varName = i.getMyVarName()
+            if varName:
+                self._varDict[varName] = i.getResultStream()
+
+
+
+    # Static methods
+    @staticmethod
+    def assignSolve(eq: EquationLike, varDict: dict[str, str]) -> None:
+        eqStream: str = eq.getStream()
+        asSplit: list[str] = re.split(ASSIGN_REGEX, eqStream)
+        lh = asSplit[0]
+        rh = asSplit[1]
+        eq.setMyVarName(lh)
+        eq.setResultStream(parse_expr(rh, varDict, evaluate=True))
+
+    @staticmethod
+    def solveSolve(eq: EquationLike) -> EquationLike:
+        pass
