@@ -6,7 +6,7 @@ from PySide6.QtCore import Signal
 class AutoResizeLineEdit(QLineEdit):
     focused: Signal = Signal()
     unfocused: Signal = Signal()
-    def __init__(self, text="", gparent=None):
+    def __init__(self, text: str="", gparent: QGraphicsItem | None = None):
         super().__init__(text)
         self.gparent: (QGraphicsItem | None) = gparent
         self.setStyleSheet("""

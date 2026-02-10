@@ -1,7 +1,7 @@
 from sympy import symbols, Eq, solve #type: ignore
 from sympy.parsing.sympy_parser import (
-    parse_expr, standard_transformations,
-    implicit_multiplication_application, convert_xor
+    parse_expr,# standard_transformations,
+#    implicit_multiplication_application, convert_xor
 )
 import re
 from yamcsolve.PlotData import PlotData
@@ -18,6 +18,7 @@ class EquationLike(Protocol):
     def getStream(self) -> str: ...
     def setResultStream(self, stream: str) -> None: ...
     def getResultStream(self) -> str: ...
+    def setEvalType(self, evalType: EqEvalType): ...
     def getEvalType(self) -> EqEvalType: ...
     def setVisType(self, visType: VisType) -> None: ...
     def getVisType(self) -> VisType: ...
@@ -45,10 +46,16 @@ class SymPySolver:
         pass
 
     def evalEq(self, id: int) -> None:
+        self.updateVarDict()
+        eq = self._equations[id]
+        eqStream = eq.getStream()
         try:
-            self.updateVarDict()
-            eq = self._equations[id]
-            self.assignSolve(eq, self._varDict)
+            if len(re.split(ASSIGN_REGEX, eqStream)) == 2:
+                self.assignSolve(eq, self._varDict)
+            elif len(re.split(SOLVE_REGEX, eqStream)) == 2:
+                pass
+            else:
+                self.evalSolve(eq, self._varDict)
         except Exception as e:
             print(f'recomputeEq failed due to: {e}')
 
@@ -88,11 +95,10 @@ class SymPySolver:
             if varName:
                 self._varDict[varName] = i.getResultStream()
 
-
-
     # Static methods
     @staticmethod
     def assignSolve(eq: EquationLike, varDict: dict[str, str]) -> None:
+        eq.setEvalType(EqEvalType.Assign)
         eqStream: str = eq.getStream()
         asSplit: list[str] = re.split(ASSIGN_REGEX, eqStream)
         lh = asSplit[0]
@@ -101,5 +107,11 @@ class SymPySolver:
         eq.setResultStream(parse_expr(rh, varDict, evaluate=True))
 
     @staticmethod
-    def solveSolve(eq: EquationLike) -> EquationLike:
+    def solveSolve(eq: EquationLike) -> None:
         pass
+
+    @staticmethod
+    def evalSolve(eq: EquationLike, varDict: dict[str, str]) -> None:
+        eq.setEvalType(EqEvalType.Eval)
+        eqStream: str = eq.getStream()
+        eq.setResultStream(parse_expr(eqStream, varDict, evaluate=True))
