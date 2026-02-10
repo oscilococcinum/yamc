@@ -7,7 +7,7 @@ from yamcgui.LatexWidget import LatexWidget
 from yamcgui.QGraphicsTextLabel import QGraphicsTextLabel
 from yamcgui.AutoResizeLineEdit import AutoResizeLineEdit
 from yamcsolve.Equation import VisType
-from yamcsolve.SymPySolver import EquationLike
+from yamcsolve.SymPySolver import Equation
 from yamcsolve.ActiveSolvers import ActiveSolver
 
 
@@ -17,7 +17,7 @@ class ExpressionItem(QGraphicsRectItem):
         super().__init__(0, 0, 220, 30)
         self.setPos(x, y)
         self._id: int = ActiveSolver.getFreeId()
-        self._equation: EquationLike = ActiveSolver.getEquation(self.getId())
+        self._equation: Equation = ActiveSolver.getEquation(self.getId())
         type(self).instances[self.getId()] = self
 
         self.setBrush(QBrush(QColor(0, 0, 0, 0)))
@@ -59,7 +59,7 @@ class ExpressionItem(QGraphicsRectItem):
     def getId(self) -> int:
         return self._id
     
-    def getEquation(self) -> EquationLike:
+    def getEquation(self) -> Equation:
         return self._equation
 
     def _onTextChanged(self) -> None:

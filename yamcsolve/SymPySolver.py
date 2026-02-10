@@ -6,38 +6,16 @@ from sympy.parsing.sympy_parser import (
 import re
 from yamcsolve.PlotData import PlotData
 from yamcsolve.Equation import Equation, NoneEquation
-from yamcsolve.Equation import EqEvalType, VisType
-from typing import Protocol
+from yamcsolve.Equation import EqEvalType
 
 #m = re.split(r'(?<![<>!]):?=', s_norm)
 ASSIGN_REGEX: str = r'(?<![<>!]):='
 SOLVE_REGEX: str = r'(?<![<>!])='
 
-class EquationLike(Protocol):
-    def setStream(self, stream: str) -> None: ...
-    def getStream(self) -> str: ...
-    def setResultStream(self, stream: str) -> None: ...
-    def getResultStream(self) -> str: ...
-    def setEvalType(self, evalType: EqEvalType): ...
-    def getEvalType(self) -> EqEvalType: ...
-    def setVisType(self, visType: VisType) -> None: ...
-    def getVisType(self) -> VisType: ...
-    def getMyVarName(self) -> str | None: ...
-    def setMyVarName(self, varName: str) -> None: ...
-    def getVarsIDepOn(self) -> list[str]: ...
-    def setVarsIDepOn(self, varsIDepOn: list[str]) -> None: ...
-    def setIsDependent(self, isDep: bool) -> None: ...
-    def setHasCyclicDepInfo(self, hasCyclicDep: bool) -> None: ...
-    def getHasCyclicDepInfo(self) -> bool: ...
-    def getIsChanged(self) -> bool: ...
-    def setIsChanged(self, isChanged: bool) -> None: ...
-    def setRecalculationReq(self, recReq: bool) -> None: ...
-    def getRecalculationReq(self) -> bool: ...
-
 class SymPySolver:
     '''Singelton Solver object. It handles all solving and storing of app data'''
     def __init__(self) -> None:
-        self._equations: dict[int, EquationLike] = {}
+        self._equations: dict[int, Equation] = {}
         self._varDict: dict[str, str] = {}
         self._plotData: dict[int, PlotData] = {}
 
@@ -76,13 +54,13 @@ class SymPySolver:
     def getPlotData(self, id: int) -> PlotData | None:
         pass
 
-    def getEquation(self, id: int) -> EquationLike:
+    def getEquation(self, id: int) -> Equation:
         try:
             return self._equations[id]
         except Exception as e:
             return NoneEquation(f'{e}')
 
-    def getAllEquations(self) -> list[EquationLike]:
+    def getAllEquations(self) -> list[Equation]:
         return list(self._equations.values())
 
     def getAllEquationsStream(self) -> list[str]:
@@ -97,7 +75,7 @@ class SymPySolver:
 
     # Static methods
     @staticmethod
-    def assignSolve(eq: EquationLike, varDict: dict[str, str]) -> None:
+    def assignSolve(eq: Equation, varDict: dict[str, str]) -> None:
         eq.setEvalType(EqEvalType.Assign)
         eqStream: str = eq.getStream()
         asSplit: list[str] = re.split(ASSIGN_REGEX, eqStream)
@@ -107,11 +85,11 @@ class SymPySolver:
         eq.setResultStream(parse_expr(rh, varDict, evaluate=True))
 
     @staticmethod
-    def solveSolve(eq: EquationLike) -> None:
+    def solveSolve(eq: Equation) -> None:
         pass
 
     @staticmethod
-    def evalSolve(eq: EquationLike, varDict: dict[str, str]) -> None:
+    def evalSolve(eq: Equation, varDict: dict[str, str]) -> None:
         eq.setEvalType(EqEvalType.Eval)
         eqStream: str = eq.getStream()
         eq.setResultStream(parse_expr(eqStream, varDict, evaluate=True))
